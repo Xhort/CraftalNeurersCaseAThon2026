@@ -28,6 +28,7 @@ const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const fmt = (value, digits = 1) => Number(value).toFixed(digits);
 const pct = (value, digits = 0) => `${(Number(value) * 100).toFixed(digits)}%`;
 const clamp = (value, low, high) => Math.min(high, Math.max(low, value));
+const escapeHtml = text => String(text).replace(/[&<>'"]/g, character => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;" }[character]));
 
 async function api(path, options = {}) {
   const { headers = {}, ...fetchOptions } = options;
@@ -88,7 +89,7 @@ function setupNavigation() {
     menu.setAttribute("aria-expanded", String(open));
   });
   $$(".nav-link").forEach(link => link.addEventListener("click", () => nav.classList.remove("open")));
-  const sections = ["overview", "live-demo", "lab", "oversight", "roadmap", "docs"].map(id => document.getElementById(id));
+  const sections = ["overview", "live-demo", "lab", "oversight", "roadmap"].map(id => document.getElementById(id));
   const observer = new IntersectionObserver(entries => {
     entries.filter(entry => entry.isIntersecting).forEach(entry => {
       $$(".nav-link").forEach(link => link.classList.toggle("active", link.getAttribute("href") === `#${entry.target.id}`));
@@ -722,88 +723,6 @@ async function saveDecision(action, overrideMinutes = null, note = "") {
 function openModal(node) { node.classList.add("open"); node.setAttribute("aria-hidden", "false"); }
 function closeModal(node) { node.classList.remove("open"); node.setAttribute("aria-hidden", "true"); }
 
-async function loadDocs() {
-  const response = await api("/api/docs");
-  const tabs = $("#docs-tabs");
-  tabs.setAttribute("role", "tablist");
-  $("#docs-content").setAttribute("role", "tabpanel");
-  tabs.innerHTML = response.documents.map((doc, index) => `<button class="doc-tab ${index === 0 ? "active" : ""}" id="tab-${doc.id}" role="tab" aria-selected="${index === 0}" aria-controls="docs-content" tabindex="${index === 0 ? 0 : -1}" data-doc="${doc.id}">${escapeHtml(doc.label)}</button>`).join("");
-  $$(".doc-tab", tabs).forEach(button => button.addEventListener("click", () => {
-    $$(".doc-tab", tabs).forEach(tab => {
-      const active = tab === button;
-      tab.classList.toggle("active", active);
-      tab.setAttribute("aria-selected", String(active));
-      tab.tabIndex = active ? 0 : -1;
-    });
-    $("#docs-content").setAttribute("aria-labelledby", button.id);
-    loadDoc(button.dataset.doc);
-  }));
-  $$(".doc-tab", tabs).forEach((button, index, buttons) => button.addEventListener("keydown", event => {
-    if (!["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
-    event.preventDefault();
-    let next = index;
-    if (event.key === "ArrowRight" || event.key === "ArrowDown") next = (index + 1) % buttons.length;
-    if (event.key === "ArrowLeft" || event.key === "ArrowUp") next = (index - 1 + buttons.length) % buttons.length;
-    if (event.key === "Home") next = 0;
-    if (event.key === "End") next = buttons.length - 1;
-    buttons[next].click();
-    buttons[next].focus();
-  }));
-  $("#docs-content").setAttribute("aria-labelledby", `tab-${response.documents[0].id}`);
-  await loadDoc(response.documents[0].id);
-}
-
-async function loadDoc(id) {
-  const content = $("#docs-content");
-  content.innerHTML = '<div class="doc-loading">Loading documentation…</div>';
-  const response = await api(`/api/docs/${id}`);
-  content.innerHTML = renderMarkdown(response.markdown);
-  content.scrollTop = 0;
-}
-
-function escapeHtml(text) {
-  return String(text).replace(/[&<>'"]/g, character => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;" }[character]));
-}
-
-function inlineMarkdown(text) {
-  return escapeHtml(text)
-    .replace(/`([^`]+)`/g, "<code>$1</code>")
-    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>');
-}
-
-function renderMarkdown(markdown) {
-  const lines = markdown.replace(/\r/g, "").split("\n");
-  let html = "", inCode = false, inList = false, code = [];
-  const closeList = () => { if (inList) { html += "</ul>"; inList = false; } };
-  for (let index = 0; index < lines.length; index++) {
-    const line = lines[index];
-    if (line.startsWith("```")) {
-      closeList();
-      if (inCode) { html += `<pre><code>${escapeHtml(code.join("\n"))}</code></pre>`; code = []; }
-      inCode = !inCode; continue;
-    }
-    if (inCode) { code.push(line); continue; }
-    if (/^\|.*\|$/.test(line) && /^\|[\s:|-]+\|$/.test(lines[index+1] || "")) {
-      closeList();
-      const headers = line.split("|").slice(1,-1).map(cell => cell.trim());
-      index += 2;
-      const rows = [];
-      while (index < lines.length && /^\|.*\|$/.test(lines[index])) { rows.push(lines[index].split("|").slice(1,-1).map(cell => cell.trim())); index++; }
-      index--;
-      html += `<table><thead><tr>${headers.map(cell => `<th>${inlineMarkdown(cell)}</th>`).join("")}</tr></thead><tbody>${rows.map(row => `<tr>${row.map(cell => `<td>${inlineMarkdown(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
-    } else if (/^### /.test(line)) { closeList(); html += `<h3>${inlineMarkdown(line.slice(4))}</h3>`; }
-    else if (/^## /.test(line)) { closeList(); html += `<h2>${inlineMarkdown(line.slice(3))}</h2>`; }
-    else if (/^# /.test(line)) { closeList(); html += `<h1>${inlineMarkdown(line.slice(2))}</h1>`; }
-    else if (/^- /.test(line)) { if (!inList) { html += "<ul>"; inList = true; } html += `<li>${inlineMarkdown(line.slice(2))}</li>`; }
-    else if (/^\d+\. /.test(line)) { closeList(); html += `<p><strong>${line.match(/^\d+\./)[0]}</strong> ${inlineMarkdown(line.replace(/^\d+\. /,""))}</p>`; }
-    else if (!line.trim()) { closeList(); }
-    else { closeList(); html += `<p>${inlineMarkdown(line)}</p>`; }
-  }
-  closeList();
-  return html;
-}
-
 function setupRoadmapFrame() {
   const frame = $("#roadmap-frame");
   if (!frame) return;
@@ -827,7 +746,7 @@ async function init() {
   setupNavigation(); setupReveals(); setupLiveDemo(); setupUploadDemo(); setupLabControls(); setupOversight(); setupRoadmapFrame();
   await resolveBackend();
   try {
-    await Promise.all([loadHealth(), loadOverview(), loadComparison(), loadDocs(), loadLiveDemoCases()]);
+    await Promise.all([loadHealth(), loadOverview(), loadComparison(), loadLiveDemoCases()]);
   } catch (error) {
     console.error(error);
     toast(error.message);

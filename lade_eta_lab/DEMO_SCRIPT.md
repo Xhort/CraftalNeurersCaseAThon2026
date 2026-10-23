@@ -4,18 +4,17 @@
 
 | Time | Screen | Presenter action and point |
 |---|---|---|
-| 0:00–0:35 | Platform overview | Ask when more information can make a decision worse and state the no-go result |
-| 0:35–1:15 | Overview | Define dispatcher, ETA, consequence of error, evaluation case, and MAE |
-| 1:15–1:55 | Documentation data tab | Show source, date range, row count, filters, license conflict, and chronological split |
-| 1:55–2:40 | Experiment lab reference | Establish the repeatable result and fixed cases |
-| 2:40–3:35 | Low quality, fix off | Show the measured error increase as feed share grows |
-| 3:35–4:35 | Live AI prediction | Run trusted, full degraded, and safeguarded inference on one held-out delivery; reveal the outcome only after the first comparison |
-| 4:35–5:05 | Mechanism and safeguard | Clarify that the low-quality test bundles retraining plus degraded inputs; explain weighting, safe backoff, and deferral |
-| 5:05–6:05 | Eight-way comparison | State the modest recovery and the stale/combined failures clearly |
-| 6:05–8:10 | Human oversight | Inspect one flagged order and record a correction or escalation |
-| 8:10–10:00 | Impact roadmap | Play or scrub the in-platform briefing; show the gates, owners, user report, and no-deployment recommendation |
+| 0:00–0:45 | Platform overview | Ask when more information can make a decision worse and state the no-go result |
+| 0:45–2:25 | Live AI prediction | Run trusted, full degraded, and safeguarded inference on one held-out delivery; reveal the outcome only after the first comparison |
+| 2:25–3:15 | Uploaded-data demo | Load the sample CSV and run the same three pipelines across several rows |
+| 3:15–5:25 | Full experiment | Show the noisy-feed result, toggle the safeguard, and use the eight-way comparison to state the stale/combined failures clearly |
+| 5:25–5:50 | Safeguard summary | Explain weighting, safe input backoff, and human review from the compact row below the experiment |
+| 5:50–7:45 | Human oversight | Inspect one flagged order and record a correction or escalation |
+| 7:45–10:00 | Impact roadmap | Play or scrub the in-platform briefing; show the gates, owners, user report, and no-deployment recommendation |
 
 This run of show is a live walkthrough of the working platform. Do not launch or use a slide deck.
+
+The collapsed evidence drawer under the roadmap is for judge questions and reproduction, not a scheduled stop in the walkthrough.
 
 ## Live AI walkthrough
 

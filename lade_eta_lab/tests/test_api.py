@@ -15,6 +15,9 @@ def test_health_and_overview_use_measured_results():
     assert "More data made delivery ETAs" in website.text
     assert "Do not deploy yet" in website.text
     assert 'id="roadmap-frame"' in website.text
+    assert 'id="evidence-files"' in website.text
+    assert 'id="docs"' not in website.text
+    assert "mechanism-section" not in website.text
     assert 'id="deck-modal"' not in website.text
     assert client.get("/lade_eta_lab/static/app.js").status_code == 200
 

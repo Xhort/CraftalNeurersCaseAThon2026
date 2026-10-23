@@ -25,14 +25,13 @@
       <a class="nav-link" href="#lab">Full evidence</a>
       <a class="nav-link" href="#oversight">Human review</a>
       <a class="nav-link" href="#roadmap">Impact roadmap</a>
-      <a class="nav-link" href="#docs">Documentation</a>
     </nav>
     <div class="status-pill"><span class="status-dot"></span><span id="api-status">Connecting</span></div>
     <button class="mobile-menu" id="mobile-menu" aria-label="Open navigation" aria-expanded="false">Menu</button>
   </header>
   <div class="backend-banner" id="backend-banner" hidden>
     <strong>Live backend unavailable.</strong>
-    <span>Refresh in a moment to reconnect the live demo, evidence, documentation, and dispatcher actions.</span>
+    <span>Refresh in a moment to reconnect the live demo, evidence, and dispatcher actions.</span>
   </div>
 
   <main id="main">
@@ -259,33 +258,18 @@
           <div class="comparison-copy"><span class="section-kicker">THE FULL READINESS CHECK</span><h3>The safeguard helps one test—and fails the overall decision.</h3><p>We repeated the same comparison with trusted data, old data, the noisy feed, and both problems together.</p><div class="honesty-note"><strong>No-go:</strong> the safeguard worsens the old-data and combined results, while the review policy sends every old-data and combined case to a dispatcher.</div></div>
           <div class="comparison-chart" id="comparison-chart" role="img" aria-label="Eight-way comparison of ETA error"></div>
         </div>
-      </div>
-    </section>
-
-    <section class="section mechanism-section">
-      <div class="container">
-        <div class="section-intro compact reveal"><span class="section-kicker">03 · THE MECHANISM</span><h2>Follow the failure,<br>not just the score.</h2></div>
-        <div class="mechanism-flow reveal">
-          <div class="mechanism-step"><span>01</span><i class="mechanism-icon">⇣</i><strong>Data enters</strong><p>Area history freezes. A low-reliability feed grows to 55% of records.</p></div>
-          <div class="mechanism-arrow">→</div>
-          <div class="mechanism-step"><span>02</span><i class="mechanism-icon">∿</i><strong>Features bend</strong><p>Distance and historical ETA drift away from the clean reference.</p></div>
-          <div class="mechanism-arrow">→</div>
-          <div class="mechanism-step"><span>03</span><i class="mechanism-icon">ƒ</i><strong>Model learns</strong><p>The noisy source contributes more examples than the accurate source.</p></div>
-          <div class="mechanism-arrow">→</div>
-          <div class="mechanism-step"><span>04</span><i class="mechanism-icon">!</i><strong>Decision changes</strong><p>ETA error and review workload change on the same future orders.</p></div>
-        </div>
-        <div class="fix-grid reveal">
-          <div class="fix-intro"><span class="section-kicker">THE SAFEGUARD</span><h3>Trust data in proportion to its evidence.</h3><p>The safeguard changes influence rather than deleting every suspicious record.</p></div>
-          <div class="fix-item"><span>1</span><div><strong>Reliability weighting</strong><p>Low-trust training rows count less.</p></div></div>
-          <div class="fix-item"><span>2</span><div><strong>Safe input backoff</strong><p>Suspicious values move toward robust defaults.</p></div></div>
-          <div class="fix-item"><span>3</span><div><strong>Human deferral</strong><p>High-risk outputs show evidence and request review.</p></div></div>
+        <div class="safeguard-summary reveal" aria-label="How the safeguard works">
+          <div><span>HOW THE SAFEGUARD WORKS</span><strong>Reduce influence—do not hide the evidence.</strong></div>
+          <p><b>1</b><span><strong>Weight</strong> Low-trust training rows count less.</span></p>
+          <p><b>2</b><span><strong>Back off</strong> Suspicious inputs move toward robust defaults.</span></p>
+          <p><b>3</b><span><strong>Review</strong> High-risk outputs go to a dispatcher.</span></p>
         </div>
       </div>
     </section>
 
     <section class="section oversight-section" id="oversight">
       <div class="container">
-        <div class="oversight-heading reveal"><div><span class="section-kicker light">04 · HUMAN REVIEW</span><h2>When the model hesitates,<br>the person gets the evidence.</h2></div><p>This is a walkthrough, not an illusion of autonomy. The dispatcher can accept, correct, or escalate—and every action is logged.</p></div>
+        <div class="oversight-heading reveal"><div><span class="section-kicker light">03 · HUMAN REVIEW</span><h2>When the model hesitates,<br>the person gets the evidence.</h2></div><p>This is a walkthrough, not an illusion of autonomy. The dispatcher can accept, correct, or escalate—and every action is logged.</p></div>
         <div class="dispatcher-shell reveal">
           <div class="dispatcher-topbar"><div class="dispatcher-brand"><span>●</span> Dispatch review queue</div><div><label for="case-select">Flagged order</label><select id="case-select"><option>Loading…</option></select></div></div>
           <div class="dispatcher-body">
@@ -319,49 +303,30 @@
     <section class="section roadmap-host-section" id="roadmap">
       <div class="container">
         <div class="roadmap-host-heading reveal">
-          <div><span class="section-kicker">05 · IMPACT ROADMAP</span><h2>Live evidence,<br>not a slideshow.</h2></div>
+          <div><span class="section-kicker">04 · IMPACT ROADMAP</span><h2>Live evidence,<br>not a slideshow.</h2></div>
           <p>This walkthrough is part of the platform. Choose the overview or any experiment scenario, play its data-generated briefing, inspect the rollout gates, and open the dispatcher-facing report.</p>
         </div>
         <div class="walkthrough-rule reveal"><span>LIVE DEMO RULE</span><strong>The team demonstrates the working platform directly. No slide deck or slideshow is used.</strong></div>
         <iframe class="roadmap-frame reveal" id="roadmap-frame" src="./roadmap-section.html" title="Interactive impact roadmap and scenario videos" loading="lazy"></iframe>
-      </div>
-    </section>
-
-    <section class="section docs-section" id="docs">
-      <div class="container">
-        <div class="docs-heading reveal"><div><span class="section-kicker">06 · SUPPORTING FILES</span><h2>Methods, results,<br>and walkthrough support.</h2></div><p>Setup, data provenance, experiment details, governance, machine-readable evidence, roadmap sources, rendered videos, and the user-facing report.</p></div>
-        <div class="docs-shell reveal">
-          <aside class="docs-tabs" id="docs-tabs" aria-label="Documentation pages"></aside>
-          <article class="docs-content" id="docs-content"><div class="doc-loading">Loading documentation…</div></article>
-        </div>
-        <div class="downloads reveal">
-          <div><span class="section-kicker">MACHINE-READABLE EVIDENCE</span><h3>Take the results with you.</h3></div>
-          <div class="download-grid">
-            <a href="/api/downloads/summary.csv" data-api-path="/api/downloads/summary.csv" download><span>CSV</span><strong>Summary</strong><small>8 matched conditions</small></a>
-            <a href="/api/downloads/timeline.csv" data-api-path="/api/downloads/timeline.csv" download><span>CSV</span><strong>Timeline</strong><small>Performance by day</small></a>
-            <a href="/api/downloads/data_manifest.json" data-api-path="/api/downloads/data_manifest.json" download><span>JSON</span><strong>Data manifest</strong><small>Source and split record</small></a>
-            <a href="/api/downloads/modification_log.csv" data-api-path="/api/downloads/modification_log.csv" download><span>CSV</span><strong>Change log</strong><small>Injected defects</small></a>
+        <details class="evidence-drawer reveal" id="evidence-files">
+          <summary><span><small>FOR JUDGES AND REPRODUCTION</small><strong>Evidence and source files</strong></span><em>Open files</em></summary>
+          <div class="evidence-file-links">
+            <a href="/api/downloads/summary.csv" data-api-path="/api/downloads/summary.csv" download><span>CSV</span><strong>Experiment summary</strong></a>
+            <a href="/api/downloads/timeline.csv" data-api-path="/api/downloads/timeline.csv" download><span>CSV</span><strong>Daily timeline</strong></a>
+            <a href="/api/downloads/data_manifest.json" data-api-path="/api/downloads/data_manifest.json" download><span>JSON</span><strong>Data manifest</strong></a>
+            <a href="/api/downloads/modification_log.csv" data-api-path="/api/downloads/modification_log.csv" download><span>CSV</span><strong>Modification log</strong></a>
+            <a href="/api/downloads/roadmap_readme.md" data-api-path="/api/downloads/roadmap_readme.md" download><span>MD</span><strong>Roadmap guide</strong></a>
+            <a href="/api/downloads/roadmap-section.html" data-api-path="/api/downloads/roadmap-section.html" download><span>HTML</span><strong>Roadmap source</strong></a>
+            <a href="/api/downloads/roadmap-data.js" data-api-path="/api/downloads/roadmap-data.js" download><span>JS</span><strong>Roadmap data</strong></a>
+            <a href="./user-report.html" target="_blank" rel="noopener"><span>HTML</span><strong>User report</strong></a>
+            <a href="/api/downloads/render_videos.py" data-api-path="/api/downloads/render_videos.py" download><span>PY</span><strong>Video renderer</strong></a>
           </div>
-        </div>
-        <div class="submission-tools reveal">
-          <div><span class="section-kicker">LIVE WALKTHROUGH KIT</span><h3>Everything needed to demonstrate the platform live.</h3><p>Start with a real prediction, show the measured evidence, complete a dispatcher review, then use the impact roadmap for rollout gates and next steps.</p></div>
-          <div class="submission-actions"><a class="button button-primary" href="#live-demo">Start live walkthrough</a><a class="button button-ghost" href="#roadmap">Open impact roadmap</a><a class="button button-ghost" href="./user-report.html" target="_blank" rel="noopener">Open user report</a></div>
-        </div>
-        <div class="support-files reveal">
-          <div><span class="section-kicker">ROADMAP + VIDEO SOURCES</span><h3>Inspect or reuse every support file.</h3></div>
-          <div class="support-file-grid">
-            <a href="/api/downloads/roadmap_readme.md" data-api-path="/api/downloads/roadmap_readme.md" download><span>MD</span><strong>Implementation guide</strong><small>Setup and rendering instructions</small></a>
-            <a href="/api/downloads/roadmap-section.html" data-api-path="/api/downloads/roadmap-section.html" download><span>HTML</span><strong>Roadmap player</strong><small>Interactive scenario-video source</small></a>
-            <a href="/api/downloads/roadmap-data.js" data-api-path="/api/downloads/roadmap-data.js" download><span>JS</span><strong>Roadmap data</strong><small>Gates, phases, and live metrics</small></a>
-            <a href="/api/downloads/user-report.html" data-api-path="/api/downloads/user-report.html" download><span>HTML</span><strong>User report</strong><small>Dispatcher-facing explanation</small></a>
-            <a href="/api/downloads/render_videos.py" data-api-path="/api/downloads/render_videos.py" download><span>PY</span><strong>Video renderer</strong><small>Frame-exact MP4 generator</small></a>
-          </div>
-        </div>
+        </details>
       </div>
     </section>
   </main>
 
-  <footer><div class="container footer-layout"><div class="brand inverse"><span class="brand-mark"><i></i><i></i><i></i></span><span>ETA Reliability Lab</span></div><p>Built for the William & Mary AI Club Case-A-Thon 2026 · Cloudflare-hosted live demo</p><a href="#docs">Open documentation ↑</a></div></footer>
+  <footer><div class="container footer-layout"><div class="brand inverse"><span class="brand-mark"><i></i><i></i><i></i></span><span>ETA Reliability Lab</span></div><p>Built for the William & Mary AI Club Case-A-Thon 2026 · Cloudflare-hosted live demo</p><a href="#evidence-files">Evidence files ↑</a></div></footer>
 
   <div class="modal" id="override-modal" aria-hidden="true"><div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="override-title"><button class="modal-close" data-close-modal aria-label="Close">×</button><span class="section-kicker">DISPATCHER CORRECTION</span><h3 id="override-title">Enter a safer ETA</h3><p>The original prediction remains in the audit log.</p><label>Corrected ETA in minutes<input id="override-value" type="number" min="1" max="360" step="1"></label><label>Reason for correction<textarea id="override-note" rows="3" placeholder="What evidence changed your decision?"></textarea></label><button class="button button-primary full" id="save-override">Save correction</button></div></div>
 

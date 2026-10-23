@@ -2,7 +2,7 @@
 
 This is the complete Case-A-Thon artifact for the prompt on unintentional data poisoning. It predicts delivery duration, isolates stale and low-quality data, compares a transparent countermeasure on the same future orders, and gives a dispatcher an evidence-based correction path. It runs locally with FastAPI and online at `antydata.com` through a Cloudflare Worker.
 
-The website is intentionally written for a nontechnical audience. Technical details, machine-readable results, limitations, and governance records remain available in the Documentation section.
+The website is intentionally written for a nontechnical audience. The main page keeps only the competition walkthrough; technical details and machine-readable evidence remain available through the collapsed evidence drawer and API.
 
 ## What is included
 
@@ -10,7 +10,7 @@ The website is intentionally written for a nontechnical audience. Technical deta
 |---|---|
 | FastAPI backend | Live model inference, blind outcome reveal, results, timeline, case review, decision logging, documentation, and downloads |
 | Experiment pipeline | Leakage-aware features, chronological splits, four degradation conditions, mitigation, repeated seeds, and saved model artifacts |
-| Website | Plain-language conclusion, three-step live AI prediction, prepared-CSV batch upload, full experiment controls, mechanism trace, dispatcher walkthrough, interactive impact roadmap, scenario videos, and documentation tabs |
+| Website | Plain-language conclusion, three-step live AI prediction, prepared-CSV batch upload, full experiment controls, compact safeguard explanation, dispatcher walkthrough, interactive impact roadmap, and scenario videos |
 | Evidence package | Run-level and daily CSV files, data manifest, modification log, metric dictionary, governance plan, and AI-use disclosure |
 | Walkthrough support | Data-generated roadmap videos, a dispatcher-facing report, and reproducible frame-exact MP4 rendering |
 | Online deployment | Edge-hosted site and API, live exported-tree inference, and durable review decisions |
