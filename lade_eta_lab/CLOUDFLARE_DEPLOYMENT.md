@@ -22,8 +22,8 @@ by the live demonstration.
 3. Keep the repository root as the build root.
 4. Set the build command to `npm run build`.
 5. Set the deploy command to `npx wrangler deploy`.
-6. Confirm the dashboard Worker name is `antydata`. If an existing Worker uses a
-   different name, change the `name` field in `wrangler.jsonc` to that exact name.
+6. Confirm the dashboard Worker name is `craftalneurerscaseathon2026`, matching
+   the `name` field in `wrangler.jsonc`.
 7. Confirm Containers are enabled for the account. The Wrangler configuration
    attaches `antydata.com` as the custom domain during deployment.
 

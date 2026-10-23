@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "antydata",
+  "name": "craftalneurerscaseathon2026",
   "main": "cloudflare/worker.ts",
   "compatibility_date": "2026-10-23",
   "upload_source_maps": true,
