@@ -22,6 +22,10 @@ def test_health_and_overview_use_measured_results():
     assert "verdict-chip" not in website.text
     assert 'id="proof-track"' in website.text
     assert website.text.count('data-proof-step=') == 3
+    assert website.text.count('class="section ') >= 4
+    assert website.text.count('role="tabpanel" aria-labelledby="nav-') == 5
+    assert website.text.count('class="nav-link') == 5
+    assert 'id="live-demo" role="tabpanel" aria-labelledby="nav-live-demo" hidden' in website.text
     assert client.get("/lade_eta_lab/static/app.js").status_code == 200
 
     health = client.get("/api/health")

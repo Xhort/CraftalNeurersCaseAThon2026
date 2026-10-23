@@ -19,12 +19,12 @@
       <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
       <span>ETA Reliability Lab</span>
     </a>
-    <nav class="desktop-nav" aria-label="Primary navigation">
-      <a class="nav-link active" href="#overview">The answer</a>
-      <a class="nav-link" href="#live-demo">Live AI demo</a>
-      <a class="nav-link" href="#lab">Full evidence</a>
-      <a class="nav-link" href="#oversight">Human review</a>
-      <a class="nav-link" href="#roadmap">Impact roadmap</a>
+    <nav class="desktop-nav" aria-label="Platform sections" role="tablist">
+      <a class="nav-link active" id="nav-overview" href="#overview" role="tab" aria-selected="true" aria-controls="overview">The answer</a>
+      <a class="nav-link" id="nav-live-demo" href="#live-demo" role="tab" aria-selected="false" aria-controls="live-demo" tabindex="-1">Live AI demo</a>
+      <a class="nav-link" id="nav-lab" href="#lab" role="tab" aria-selected="false" aria-controls="lab" tabindex="-1">Full evidence</a>
+      <a class="nav-link" id="nav-oversight" href="#oversight" role="tab" aria-selected="false" aria-controls="oversight" tabindex="-1">Human review</a>
+      <a class="nav-link" id="nav-roadmap" href="#roadmap" role="tab" aria-selected="false" aria-controls="roadmap" tabindex="-1">Impact roadmap</a>
     </nav>
     <div class="status-pill"><span class="status-dot"></span><span id="api-status">Connecting</span></div>
     <button class="mobile-menu" id="mobile-menu" aria-label="Open navigation" aria-expanded="false">Menu</button>
@@ -34,8 +34,8 @@
     <span>Refresh in a moment to reconnect the live demo, evidence, and dispatcher actions.</span>
   </div>
 
-  <main id="main">
-    <section class="hero" id="overview">
+  <main class="site-views" id="main">
+    <section class="hero site-view is-active" id="overview" role="tabpanel" aria-labelledby="nav-overview">
       <div class="hero-grid" aria-hidden="true"></div>
       <div class="hero-orb hero-orb-one" aria-hidden="true"></div>
       <div class="hero-orb hero-orb-two" aria-hidden="true"></div>
@@ -49,7 +49,7 @@
             <div><strong>Do not deploy yet.</strong><small>Improve the safeguard, then test it in a limited one-region shadow pilot.</small></div>
           </div>
           <div class="hero-actions">
-            <a class="button button-primary" href="#live-demo">Try the live AI prediction <span aria-hidden="true">↓</span></a>
+            <a class="button button-primary" href="#live-demo">Try the live AI prediction <span aria-hidden="true">→</span></a>
             <a class="button button-ghost" href="#lab">Explore the full evidence</a>
           </div>
           <div class="evidence-stamp"><span class="stamp-icon">✓</span><span><strong id="evidence-label">Measured LaDe experiment</strong><small id="evidence-detail">31,415 orders · 24 matched runs · same future deliveries</small></span></div>
@@ -92,7 +92,7 @@
       </div>
     </section>
 
-    <section class="section live-demo-section" id="live-demo">
+    <section class="section live-demo-section site-view" id="live-demo" role="tabpanel" aria-labelledby="nav-live-demo" hidden>
       <div class="container">
         <div class="live-demo-heading reveal">
           <div>
@@ -207,7 +207,7 @@
       </div>
     </section>
 
-    <section class="section lab-section" id="lab">
+    <section class="section lab-section site-view" id="lab" role="tabpanel" aria-labelledby="nav-lab" hidden>
       <div class="container">
         <div class="lab-heading reveal">
           <div><span class="section-kicker light">02 · FULL EXPERIMENT</span><h2>Start with the conclusion.<br>Open the detail when you need it.</h2></div>
@@ -278,7 +278,7 @@
       </div>
     </section>
 
-    <section class="section oversight-section" id="oversight">
+    <section class="section oversight-section site-view" id="oversight" role="tabpanel" aria-labelledby="nav-oversight" hidden>
       <div class="container">
         <div class="oversight-heading reveal"><div><span class="section-kicker light">03 · HUMAN REVIEW</span><h2>When the model hesitates,<br>the person gets the evidence.</h2></div><p>This is a walkthrough, not an illusion of autonomy. The dispatcher can accept, correct, or escalate—and every action is logged.</p></div>
         <div class="dispatcher-shell reveal">
@@ -311,7 +311,7 @@
       </div>
     </section>
 
-    <section class="section roadmap-host-section" id="roadmap">
+    <section class="section roadmap-host-section site-view" id="roadmap" role="tabpanel" aria-labelledby="nav-roadmap" hidden>
       <div class="container">
         <div class="roadmap-host-heading reveal">
           <div><span class="section-kicker">04 · IMPACT ROADMAP</span><h2>Live evidence,<br>not a slideshow.</h2></div>
@@ -337,7 +337,9 @@
     </section>
   </main>
 
-  <footer><div class="container footer-layout"><div class="brand inverse"><span class="brand-mark"><i></i><i></i><i></i></span><span>ETA Reliability Lab</span></div><p>Built for the William & Mary AI Club Case-A-Thon 2026 · Cloudflare-hosted live demo</p><a href="#evidence-files">Evidence files ↑</a></div></footer>
+  <footer><div class="container footer-layout"><div class="brand inverse"><span class="brand-mark"><i></i><i></i><i></i></span><span>ETA Reliability Lab</span></div><p>Built for the William & Mary AI Club Case-A-Thon 2026 · Cloudflare-hosted live demo</p><a href="#evidence-files">Evidence files →</a></div></footer>
+
+  <div class="sr-only" id="view-announcer" aria-live="polite"></div>
 
   <div class="modal" id="override-modal" aria-hidden="true"><div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="override-title"><button class="modal-close" data-close-modal aria-label="Close">×</button><span class="section-kicker">DISPATCHER CORRECTION</span><h3 id="override-title">Enter a safer ETA</h3><p>The original prediction remains in the audit log.</p><label>Corrected ETA in minutes<input id="override-value" type="number" min="1" max="360" step="1"></label><label>Reason for correction<textarea id="override-note" rows="3" placeholder="What evidence changed your decision?"></textarea></label><button class="button button-primary full" id="save-override">Save correction</button></div></div>
 

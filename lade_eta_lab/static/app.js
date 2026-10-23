@@ -84,18 +84,88 @@ function toast(message) {
 function setupNavigation() {
   const menu = $("#mobile-menu");
   const nav = $(".desktop-nav");
+  const links = $$(".nav-link", nav);
+  const views = $$(".site-view");
+  const viewIds = views.map(view => view.id);
+  const viewLabels = Object.fromEntries(links.map(link => [link.getAttribute("href").slice(1), link.textContent.trim()]));
+  let activeViewId = views.find(view => !view.hidden)?.id || viewIds[0];
+
   menu.addEventListener("click", () => {
     const open = nav.classList.toggle("open");
     menu.setAttribute("aria-expanded", String(open));
   });
-  $$(".nav-link").forEach(link => link.addEventListener("click", () => nav.classList.remove("open")));
-  const sections = ["overview", "live-demo", "lab", "oversight", "roadmap"].map(id => document.getElementById(id));
-  const observer = new IntersectionObserver(entries => {
-    entries.filter(entry => entry.isIntersecting).forEach(entry => {
-      $$(".nav-link").forEach(link => link.classList.toggle("active", link.getAttribute("href") === `#${entry.target.id}`));
+
+  const sectionForHash = hash => {
+    const targetId = hash.replace(/^#/, "");
+    if (viewIds.includes(targetId)) return targetId;
+    return document.getElementById(targetId)?.closest(".site-view")?.id || null;
+  };
+
+  const showView = (viewId, { updateHistory = true, focusTab = false } = {}) => {
+    if (!viewIds.includes(viewId)) return;
+    const previousIndex = viewIds.indexOf(activeViewId);
+    const nextIndex = viewIds.indexOf(viewId);
+    const directionClass = nextIndex < previousIndex ? "view-enter-backward" : "view-enter-forward";
+    activeViewId = viewId;
+
+    views.forEach(view => {
+      const active = view.id === viewId;
+      view.hidden = !active;
+      view.classList.toggle("is-active", active);
+      view.classList.remove("view-enter-forward", "view-enter-backward");
+      if (active) {
+        void view.offsetWidth;
+        view.classList.add(directionClass);
+      }
     });
-  }, { rootMargin: "-35% 0px -55%", threshold: 0 });
-  sections.forEach(section => section && observer.observe(section));
+
+    links.forEach(link => {
+      const active = link.getAttribute("href") === `#${viewId}`;
+      link.classList.toggle("active", active);
+      link.setAttribute("aria-selected", String(active));
+      link.tabIndex = active ? 0 : -1;
+      if (active && focusTab) link.focus();
+    });
+
+    nav.classList.remove("open");
+    menu.setAttribute("aria-expanded", "false");
+    window.scrollTo({ top: 0, behavior: "auto" });
+    if (updateHistory && window.location.hash !== `#${viewId}`) history.pushState({ viewId }, "", `#${viewId}`);
+    $("#view-announcer").textContent = `${viewLabels[viewId]} section selected`;
+  };
+
+  links.forEach((link, index) => {
+    link.addEventListener("click", event => {
+      event.preventDefault();
+      showView(link.getAttribute("href").slice(1));
+    });
+    link.addEventListener("keydown", event => {
+      const destinations = { ArrowLeft: index - 1, ArrowRight: index + 1, Home: 0, End: links.length - 1 };
+      if (!(event.key in destinations)) return;
+      event.preventDefault();
+      const targetIndex = clamp(destinations[event.key], 0, links.length - 1);
+      showView(links[targetIndex].getAttribute("href").slice(1), { focusTab: true });
+    });
+  });
+
+  $$('a[href^="#"]').filter(link => !link.classList.contains("nav-link")).forEach(link => {
+    link.addEventListener("click", event => {
+      const targetHash = link.getAttribute("href");
+      const viewId = sectionForHash(targetHash);
+      if (!viewId) return;
+      event.preventDefault();
+      showView(viewId);
+      const nestedTarget = document.getElementById(targetHash.slice(1));
+      if (nestedTarget && nestedTarget.id !== viewId) {
+        if (nestedTarget.tagName === "DETAILS") nestedTarget.open = true;
+        nestedTarget.focus?.({ preventScroll: true });
+      }
+    });
+  });
+
+  window.addEventListener("popstate", () => showView(sectionForHash(window.location.hash) || "overview", { updateHistory: false }));
+  showView(sectionForHash(window.location.hash) || "overview", { updateHistory: false });
+
   const updateScrollState = () => document.body.classList.toggle("has-scrolled", window.scrollY > 220);
   updateScrollState();
   window.addEventListener("scroll", updateScrollState, { passive: true });
