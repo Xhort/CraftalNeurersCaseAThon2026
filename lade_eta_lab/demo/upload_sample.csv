@@ -1,0 +1,5 @@
+package_id,city,region_id,region_code,aoi_type_code,accept_hour,day_of_week,distance_km,courier_recent_accepts,area_historical_eta,courier_historical_eta,duration_minutes
+3962272,Jilin,129,0,1,8.783333,1,2.326331,6,163.530074,173.867436,115.000000
+2754711,Jilin,31,2,1,8.266667,2,0.384455,1,175.460422,165.710035,217.000000
+2747792,Jilin,129,0,1,8.233333,3,0.179359,2,163.387540,158.910306,58.000000
+482116,Jilin,129,0,6,8.683333,4,1.732058,1,163.680963,159.808448,167.000000

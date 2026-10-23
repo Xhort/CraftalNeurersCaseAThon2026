@@ -68,6 +68,8 @@ def model_payload(scenario: str) -> dict[str, Any]:
         "baseline": float(estimator._baseline_prediction.ravel()[0]),
         "imputer": [float(value) for value in imputer.statistics_],
         "residualQ90": float(fitted.residual_q90),
+        "globalBaseline": float(fitted.global_baseline),
+        "staleAfterDays": int(fitted.stale_after_days),
         "trees": trees,
     }
 

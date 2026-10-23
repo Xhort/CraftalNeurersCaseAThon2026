@@ -32,7 +32,7 @@ from config import (
 )
 from data import load_delivery_csv, make_synthetic_delivery_data
 from evaluate import run_suite
-from features import chronological_split, prepare_features
+from features import MODEL_FEATURES, chronological_split, prepare_features
 from mitigation import review_reason
 from scenarios import apply_condition
 
@@ -94,6 +94,25 @@ class PreviewRequest(BaseModel):
 class LivePredictionRequest(BaseModel):
     package_id: str = Field(min_length=1, max_length=100)
     scenario: Literal["clean", "poisoned", "safeguarded"]
+
+
+class UploadedPredictionRow(BaseModel):
+    package_id: str | int = Field(default="uploaded-row")
+    city: str | None = Field(default=None, max_length=100)
+    region_id: str | int | None = None
+    region_code: float = Field(ge=0, le=100_000)
+    aoi_type_code: float = Field(ge=0, le=100_000)
+    accept_hour: float = Field(ge=0, lt=24)
+    day_of_week: float = Field(ge=0, le=6)
+    distance_km: float = Field(ge=0, le=100)
+    courier_recent_accepts: float = Field(ge=0, le=10_000)
+    area_historical_eta: float = Field(ge=0, le=360)
+    courier_historical_eta: float = Field(ge=0, le=360)
+    duration_minutes: float | None = Field(default=None, ge=1, le=360)
+
+
+class UploadedPredictionRequest(BaseModel):
+    rows: list[UploadedPredictionRow] = Field(min_length=1, max_length=50)
 
 
 app = FastAPI(
@@ -340,6 +359,34 @@ def _live_predictions(index: int) -> tuple[dict[str, dict[str, object]], dict[st
             },
         }
     return outputs, effective_frames
+
+
+def _uploaded_prediction_frames(
+    request: UploadedPredictionRequest,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Build trusted and transparently degraded inputs from prepared uploaded rows."""
+    records = [row.model_dump() for row in request.rows]
+    clean = pd.DataFrame(records)
+    clean["package_id"] = clean["package_id"].astype(str)
+    clean["hour_sin"] = np.sin(2 * np.pi * clean["accept_hour"] / 24)
+    clean["hour_cos"] = np.cos(2 * np.pi * clean["accept_hour"] / 24)
+    clean["data_age_days"] = 0.0
+    clean["source_reliability"] = 1.0
+    clean["low_quality_share"] = 0.0
+    clean["source_name"] = "uploaded_prepared_row"
+
+    degraded = clean.copy()
+    # This deterministic upload-only profile mirrors the measured low-quality
+    # intervention without pretending that a newly uploaded row belonged to the
+    # original seeded evaluation batch.
+    degraded["distance_km"] = (degraded["distance_km"] * 1.42).clip(0, 100)
+    degraded["area_historical_eta"] = (
+        degraded["area_historical_eta"] + 10.0
+    ).clip(0, 360)
+    degraded["source_reliability"] = 0.25
+    degraded["low_quality_share"] = DEFAULT_CONFIG.noisy_feed_share
+    degraded["source_name"] = "controlled_uploaded_unreliable_feed"
+    return clean, degraded
 
 
 @app.get("/", include_in_schema=False)
@@ -597,6 +644,108 @@ def live_demo_predict(request: LivePredictionRequest) -> dict[str, object]:
             "The noisy-feed intervention is a controlled simulation of accidental data-quality failure, not evidence that the source dataset was maliciously attacked.",
             "This delivery is illustrative; deployment conclusions must use the aggregate experiment rather than a single example.",
         ],
+        "computed_at_utc": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+@app.post("/api/live-demo/upload-predict")
+def live_demo_upload_predict(request: UploadedPredictionRequest) -> dict[str, object]:
+    """Score prepared CSV rows through all three fitted live-demo pipelines."""
+    clean, degraded = _uploaded_prediction_frames(request)
+    source_frames = {
+        "clean": clean,
+        "poisoned": degraded,
+        "safeguarded": degraded,
+    }
+    scenario_outputs: dict[str, dict[str, object]] = {}
+    for scenario, frame in source_frames.items():
+        fitted = _load_live_model(scenario)
+        predictions = fitted.predict(frame)
+        half_widths, flagged = fitted.intervals_and_flags(frame)
+        scenario_outputs[scenario] = {
+            "predictions": predictions,
+            "half_widths": half_widths,
+            "flagged": flagged,
+        }
+
+    results: list[dict[str, object]] = []
+    errors: dict[str, list[float]] = {scenario: [] for scenario in _LIVE_ARTIFACTS}
+    for index, row in clean.iterrows():
+        actual = row.get("duration_minutes")
+        actual_value = None if pd.isna(actual) else float(actual)
+        predictions: dict[str, object] = {}
+        for scenario in _LIVE_ARTIFACTS:
+            output = scenario_outputs[scenario]
+            prediction = float(output["predictions"][index])
+            half_width = float(output["half_widths"][index])
+            absolute_error = (
+                None if actual_value is None else abs(actual_value - prediction)
+            )
+            if absolute_error is not None:
+                errors[scenario].append(absolute_error)
+            scenario_frame = source_frames[scenario]
+            predictions[scenario] = {
+                "prediction_minutes": round(prediction, 1),
+                "interval": {
+                    "low_minutes": round(max(0.0, prediction - half_width), 1),
+                    "high_minutes": round(prediction + half_width, 1),
+                },
+                "absolute_error_minutes": (
+                    None if absolute_error is None else round(absolute_error, 1)
+                ),
+                "review": {
+                    "flagged": bool(output["flagged"][index]),
+                    "reason": review_reason(
+                        scenario_frame.iloc[index],
+                        stale_after_days=DEFAULT_CONFIG.stale_after_days,
+                    ),
+                },
+            }
+        results.append(
+            {
+                "package_id": str(row["package_id"]),
+                "city": row.get("city"),
+                "region_id": row.get("region_id"),
+                "actual_duration_minutes_demo_only": actual_value,
+                "predictions": predictions,
+            }
+        )
+
+    rows_with_outcomes = sum(
+        result["actual_duration_minutes_demo_only"] is not None for result in results
+    )
+    return {
+        "results": results,
+        "summary": {
+            "rows_scored": len(results),
+            "rows_with_outcomes": rows_with_outcomes,
+            "mae_minutes": {
+                scenario: (
+                    round(float(np.mean(values)), 1) if values else None
+                )
+                for scenario, values in errors.items()
+            },
+            "safeguarded_review_rate": round(
+                float(np.mean(scenario_outputs["safeguarded"]["flagged"])), 4
+            ),
+        },
+        "method": {
+            "input_format": "prepared acceptance-time feature rows",
+            "models": _LIVE_ARTIFACTS,
+            "trusted_input": "uploaded feature values with trusted-source metadata",
+            "degraded_input": {
+                "distance_multiplier": 1.42,
+                "area_history_added_minutes": 10.0,
+                "source_reliability": 0.25,
+                "low_quality_share": DEFAULT_CONFIG.noisy_feed_share,
+            },
+            "outcome_used_as_model_input": False,
+            "note": (
+                "The upload comparison uses the same three fitted artifacts. A transparent, "
+                "deterministic low-quality profile is applied to uploaded rows because they were "
+                "not members of the original seeded evaluation batch."
+            ),
+        },
         "computed_at_utc": datetime.now(timezone.utc).isoformat(),
     }
 

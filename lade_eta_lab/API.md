@@ -20,6 +20,7 @@ Timeline parameters are `condition` and `mitigated`. Case parameters also includ
 |---|---|
 | `GET /api/live-demo/cases` | List four disclosed, real held-out teaching cases without revealing their outcomes |
 | `POST /api/live-demo/predict` | Recalculate one selected scenario and return its prediction, interval, review state, changed signals, model metadata, and caveats |
+| `POST /api/live-demo/upload-predict` | Score 1–50 prepared CSV rows through the trusted, unreliable-feed, and safeguarded pipelines in one request |
 | `GET /api/live-demo/outcome/{package_id}` | Reveal the held-out outcome and scenario errors after the prediction comparison |
 
 The prediction request body is:
@@ -34,6 +35,8 @@ The prediction request body is:
 `scenario` must be `clean`, `poisoned`, or `safeguarded`. In production, the endpoint evaluates the corresponding exported fitted trees for the selected held-out delivery. The safeguarded vector retains the same fixed-batch preprocessing context used by the measured Python experiment. Local FastAPI development loads the original joblib artifact and calls `.predict()`.
 
 The `poisoned` scenario is the full low-quality condition: the model was fitted on controlled unreliable training rows, and the held-out delivery receives the corresponding controlled degraded inputs. The `safeguarded` scenario adds the bundled reliability-aware training, input backoff, and review policy. Neither `/cases` nor `/predict` returns the real duration. `/outcome/{package_id}` is a separate retrospective reveal, and the target is never a model feature.
+
+The upload endpoint accepts JSON produced by the website's CSV parser. Each row requires `region_code`, `aoi_type_code`, `accept_hour`, `day_of_week`, `distance_km`, `courier_recent_accepts`, `area_historical_eta`, and `courier_historical_eta`. `package_id`, `city`, `region_id`, and `duration_minutes` are optional. When duration is present, it is used only after prediction to calculate error. The uploaded baseline is scored as trusted input, then a disclosed deterministic low-quality profile is applied for the degraded and safeguarded comparison because new rows were not members of the original seeded evaluation batch.
 
 ## Human oversight endpoints
 

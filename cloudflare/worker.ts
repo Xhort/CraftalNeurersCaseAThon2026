@@ -17,6 +17,15 @@ const DECISION_HEADERS = [
 ];
 const CONDITIONS = new Set(["reference", "stale", "low_quality", "combined"]);
 const SCENARIOS = new Set<Scenario>(["clean", "poisoned", "safeguarded"]);
+const MODEL_FEATURES = [
+  "region_code", "aoi_type_code", "accept_hour", "hour_sin", "hour_cos",
+  "day_of_week", "distance_km", "courier_recent_accepts",
+  "area_historical_eta", "courier_historical_eta",
+] as const;
+const UPLOAD_REQUIRED_FIELDS = [
+  "region_code", "aoi_type_code", "accept_hour", "day_of_week", "distance_km",
+  "courier_recent_accepts", "area_historical_eta", "courier_historical_eta",
+] as const;
 const DOWNLOADS: Record<string, string> = {
   "summary.csv": "text/csv; charset=utf-8",
   "runs.csv": "text/csv; charset=utf-8",
@@ -91,6 +100,149 @@ function livePredictions(record: any): Record<Scenario, number> {
     result[scenario] = evaluateModel(EDGE_DATA.live.models[scenario], record.vectors[scenario]);
   }
   return result;
+}
+
+function requiredUploadNumber(row: any, field: string, index: number): number {
+  const value = Number(row?.[field]);
+  if (!Number.isFinite(value)) throw new Error(`Row ${index + 1}: ${field} must be a number.`);
+  return value;
+}
+
+function validateUploadRows(body: any): any[] {
+  if (!Array.isArray(body?.rows) || body.rows.length < 1 || body.rows.length > 50) {
+    throw new Error("Provide between 1 and 50 prepared CSV rows.");
+  }
+  return body.rows.map((row: any, index: number) => {
+    const values = Object.fromEntries(
+      UPLOAD_REQUIRED_FIELDS.map((field) => [field, requiredUploadNumber(row, field, index)]),
+    ) as Record<string, number>;
+    const ranges: Record<string, [number, number]> = {
+      region_code: [0, 100000], aoi_type_code: [0, 100000], accept_hour: [0, 24],
+      day_of_week: [0, 6], distance_km: [0, 100], courier_recent_accepts: [0, 10000],
+      area_historical_eta: [0, 360], courier_historical_eta: [0, 360],
+    };
+    for (const [field, [minimum, maximum]] of Object.entries(ranges)) {
+      if (values[field] < minimum || values[field] > maximum
+        || (field === "accept_hour" && values[field] === 24)) {
+        throw new Error(`Row ${index + 1}: ${field} is outside the supported range.`);
+      }
+    }
+    const actual = row.duration_minutes === null || row.duration_minutes === undefined
+      || row.duration_minutes === "" ? null : Number(row.duration_minutes);
+    if (actual !== null && (!Number.isFinite(actual) || actual < 1 || actual > 360)) {
+      throw new Error(`Row ${index + 1}: duration_minutes must be between 1 and 360.`);
+    }
+    const hourRadians = 2 * Math.PI * values.accept_hour / 24;
+    const clean = {
+      ...values,
+      hour_sin: Math.sin(hourRadians), hour_cos: Math.cos(hourRadians),
+      data_age_days: 0, source_reliability: 1, low_quality_share: 0,
+    };
+    const degraded = {
+      ...clean,
+      distance_km: Math.min(100, clean.distance_km * 1.42),
+      area_historical_eta: Math.min(360, clean.area_historical_eta + 10),
+      source_reliability: 0.25, low_quality_share: 0.55,
+    };
+    return {
+      package_id: String(row.package_id || `upload-${index + 1}`),
+      city: row.city == null ? null : String(row.city).slice(0, 100),
+      region_id: row.region_id == null ? null : String(row.region_id).slice(0, 100),
+      actual, clean, degraded,
+    };
+  });
+}
+
+function reviewRisk(row: any, staleAfterDays = 7): number {
+  const ageRisk = Math.min(1, Math.max(0, row.data_age_days / Math.max(staleAfterDays * 3, 1)));
+  const sourceRisk = 1 - Math.min(1, Math.max(0.1, row.source_reliability));
+  const volumeRisk = Math.min(1, Math.max(0, row.low_quality_share));
+  return Math.min(1, Math.max(0, 0.4 * ageRisk + 0.4 * sourceRisk + 0.2 * volumeRisk));
+}
+
+function modelVector(row: any): number[] {
+  return MODEL_FEATURES.map((field) => Number(row[field]));
+}
+
+function uploadedBatchResponse(rows: any[]): any {
+  const degradedDistances = rows.map((row) => row.degraded.distance_km).sort((a, b) => a - b);
+  const middle = Math.floor(degradedDistances.length / 2);
+  const distanceMedian = degradedDistances.length % 2
+    ? degradedDistances[middle]
+    : (degradedDistances[middle - 1] + degradedDistances[middle]) / 2;
+  const errors: Record<Scenario, number[]> = { clean: [], poisoned: [], safeguarded: [] };
+  const results = rows.map((row) => {
+    const modelRows: Record<Scenario, any> = {
+      clean: row.clean,
+      poisoned: row.degraded,
+      safeguarded: {
+        ...row.degraded,
+        distance_km: row.degraded.source_reliability * row.degraded.distance_km
+          + (1 - row.degraded.source_reliability) * distanceMedian,
+        area_historical_eta: row.degraded.source_reliability * row.degraded.area_historical_eta
+          + (1 - row.degraded.source_reliability) * EDGE_DATA.live.models.safeguarded.globalBaseline,
+      },
+    };
+    const predictions: Record<string, any> = {};
+    for (const scenario of SCENARIOS) {
+      const model = EDGE_DATA.live.models[scenario];
+      const prediction = evaluateModel(model, modelVector(modelRows[scenario]));
+      const riskRow = scenario === "clean" ? row.clean : row.degraded;
+      const risk = reviewRisk(riskRow, model.staleAfterDays);
+      const halfWidth = model.residualQ90 * (1 + risk);
+      const absoluteError = row.actual === null ? null : Math.abs(row.actual - prediction);
+      if (absoluteError !== null) errors[scenario].push(absoluteError);
+      predictions[scenario] = {
+        prediction_minutes: rounded(prediction),
+        interval: {
+          low_minutes: rounded(Math.max(0, prediction - halfWidth)),
+          high_minutes: rounded(prediction + halfWidth),
+        },
+        absolute_error_minutes: absoluteError === null ? null : rounded(absoluteError),
+        review: {
+          flagged: risk >= 0.35,
+          reason: risk >= 0.35
+            ? "location input came from a low-reliability feed; unreliable feed supplies 55% of recent inputs"
+            : "inputs passed the configured reliability checks",
+        },
+      };
+    }
+    return {
+      package_id: row.package_id, city: row.city, region_id: row.region_id,
+      actual_duration_minutes_demo_only: row.actual, predictions,
+    };
+  });
+  const mean = (values: number[]): number | null => values.length
+    ? rounded(values.reduce((total, value) => total + value, 0) / values.length)
+    : null;
+  return {
+    results,
+    summary: {
+      rows_scored: results.length,
+      rows_with_outcomes: results.filter((row) => row.actual_duration_minutes_demo_only !== null).length,
+      mae_minutes: {
+        clean: mean(errors.clean), poisoned: mean(errors.poisoned), safeguarded: mean(errors.safeguarded),
+      },
+      safeguarded_review_rate: rounded(
+        results.filter((row) => row.predictions.safeguarded.review.flagged).length / results.length, 4,
+      ),
+    },
+    method: {
+      input_format: "prepared acceptance-time feature rows",
+      models: {
+        clean: "reference_unmitigated.joblib", poisoned: "low_quality_unmitigated.joblib",
+        safeguarded: "low_quality_mitigated.joblib",
+      },
+      trusted_input: "uploaded feature values with trusted-source metadata",
+      degraded_input: {
+        distance_multiplier: 1.42, area_history_added_minutes: 10,
+        source_reliability: 0.25, low_quality_share: 0.55,
+      },
+      outcome_used_as_model_input: false,
+      note: "The upload comparison uses the same three fitted artifacts. A transparent, deterministic low-quality profile is applied to uploaded rows because they were not members of the original seeded evaluation batch.",
+    },
+    computed_at_utc: new Date().toISOString(),
+  };
 }
 
 function casePayload(condition: string, mitigated: boolean): any {
@@ -282,6 +434,15 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
     response.model.prediction_computed_live_on_request = true;
     response.computed_at_utc = new Date().toISOString();
     return jsonResponse(response);
+  }
+  if (path === "/api/live-demo/upload-predict" && request.method === "POST") {
+    let body: any;
+    try {
+      body = await parseJsonBody(request);
+      return jsonResponse(uploadedBatchResponse(validateUploadRows(body)));
+    } catch (error) {
+      return errorResponse(422, error instanceof Error ? error.message : "Invalid upload rows.");
+    }
   }
   const outcomeMatch = path.match(/^\/api\/live-demo\/outcome\/([^/]+)$/);
   if (outcomeMatch && request.method === "GET") {

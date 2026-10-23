@@ -152,6 +152,47 @@
             <p class="live-model-caveat"><strong>What is live?</strong> Training happened beforehand for speed and repeatability. Every button evaluates the exported fitted trees on the selected held-out delivery in the online Worker. The real outcome is never a model input.</p>
           </div>
         </div>
+
+        <div class="upload-demo reveal" id="upload-demo">
+          <div class="upload-demo-heading">
+            <div>
+              <span class="section-kicker light">UPLOAD YOUR OWN DATA</span>
+              <h3>Run the same three AI pipelines on rows from the dataset.</h3>
+              <p>Upload a prepared CSV, preview the rows, then compare the trusted model, unreliable-feed model, and safeguard in one batch. Your file is read for this prediction request only.</p>
+            </div>
+            <a class="button button-ghost upload-template-link" href="./lade_eta_lab/demo/upload_sample.csv" download>Download sample CSV</a>
+          </div>
+
+          <div class="upload-demo-grid">
+            <div>
+              <label class="upload-dropzone" id="upload-dropzone" for="upload-data-input">
+                <input id="upload-data-input" type="file" accept=".csv,text/csv">
+                <span class="upload-icon" aria-hidden="true">⇧</span>
+                <strong>Drop a CSV here or choose a file</strong>
+                <small>Up to 50 rows · CSV only · 2 MB maximum</small>
+              </label>
+              <div class="upload-schema-note">
+                <strong>Required prepared fields</strong>
+                <p><code>region_code</code>, <code>aoi_type_code</code>, <code>accept_hour</code>, <code>day_of_week</code>, <code>distance_km</code>, <code>courier_recent_accepts</code>, <code>area_historical_eta</code>, and <code>courier_historical_eta</code>.</p>
+                <p><code>package_id</code> and <code>duration_minutes</code> are optional. Include the duration to calculate retrospective error.</p>
+              </div>
+            </div>
+
+            <div class="upload-workspace">
+              <div class="upload-status" id="upload-status" aria-live="polite">
+                <div><span>NO FILE SELECTED</span><strong>Upload the sample or a prepared dataset export.</strong></div>
+                <small>The algorithm will not use <code>duration_minutes</code> as an input.</small>
+              </div>
+              <div class="upload-actions">
+                <button class="live-control primary" id="run-upload-predictions" disabled>Run all three pipelines</button>
+                <button class="live-reset" id="clear-upload" disabled>Clear</button>
+              </div>
+              <div class="upload-results" id="upload-results">
+                <div class="upload-empty">A preview and batch prediction results will appear here.</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 

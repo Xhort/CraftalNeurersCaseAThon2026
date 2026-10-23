@@ -10,7 +10,7 @@ The website is intentionally written for a nontechnical audience. Technical deta
 |---|---|
 | FastAPI backend | Live model inference, blind outcome reveal, results, timeline, case review, decision logging, documentation, and downloads |
 | Experiment pipeline | Leakage-aware features, chronological splits, four degradation conditions, mitigation, repeated seeds, and saved model artifacts |
-| Website | Plain-language conclusion, three-step live AI prediction, full experiment controls, mechanism trace, dispatcher walkthrough, documentation tabs, and a 10-minute presentation mode |
+| Website | Plain-language conclusion, three-step live AI prediction, prepared-CSV batch upload, full experiment controls, mechanism trace, dispatcher walkthrough, documentation tabs, and a 10-minute presentation mode |
 | Evidence package | Run-level and daily CSV files, data manifest, modification log, metric dictionary, governance plan, and AI-use disclosure |
 | Fallback demo | A 75-second captioned MP4 plus reproducible capture and build scripts |
 | Online deployment | Edge-hosted site and API, live exported-tree inference, and durable review decisions |
@@ -92,6 +92,8 @@ The website’s **Live AI prediction** section evaluates trees exported from the
 Training is performed ahead of the presentation so the walkthrough is fast and repeatable. Every online button request freshly evaluates the exported fitted trees for the selected delivery. Safeguard preprocessing uses the same fixed evaluation-batch median registered by the Python experiment. The outcome is withheld from both the case list and prediction responses; the browser requests it from a separate retrospective reveal endpoint only after showing the trusted and degraded predictions.
 
 The low-quality scenario is an **end-to-end scenario**, not an attribution test: it bundles simulated corruption of duplicated training rows with controlled changes to selected evaluation inputs. The four selectable cases are disclosed teaching examples, including a counterexample. They do not replace the aggregate conclusion from 3,407 held-out deliveries and 24 matched runs.
+
+The upload panel accepts up to 50 prepared feature rows and runs every row through the same three fitted artifacts. A downloadable sample shows the accepted schema. For uploaded rows, the degraded comparison uses a disclosed deterministic version of the low-quality profile (`distance_km × 1.42`, `area_historical_eta + 10`, source reliability `0.25`, and unreliable-feed share `0.55`). Optional `duration_minutes` values are withheld from model inputs and used only to report retrospective error.
 
 ## Current measured conclusion
 

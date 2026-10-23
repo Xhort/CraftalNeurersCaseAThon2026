@@ -18,6 +18,9 @@ const state = {
   liveOutcome: null,
   liveSelectionNote: "",
   liveRunning: false,
+  uploadRows: [],
+  uploadFileName: "",
+  uploadRunning: false,
 };
 
 let API_BASE = "";
@@ -337,6 +340,152 @@ function setupLiveDemo() {
   $("#run-safeguarded-prediction").addEventListener("click", () => runLiveInference("safeguarded"));
   $("#reset-live-demo").addEventListener("click", resetLiveDemo);
   resetLiveDemo();
+}
+
+const UPLOAD_REQUIRED_FIELDS = [
+  "region_code", "aoi_type_code", "accept_hour", "day_of_week", "distance_km",
+  "courier_recent_accepts", "area_historical_eta", "courier_historical_eta",
+];
+
+function parseCsv(text) {
+  const rows = [];
+  let row = [], value = "", quoted = false;
+  for (let index = 0; index < text.length; index++) {
+    const character = text[index];
+    if (quoted) {
+      if (character === '"' && text[index + 1] === '"') { value += '"'; index++; }
+      else if (character === '"') quoted = false;
+      else value += character;
+    } else if (character === '"') quoted = true;
+    else if (character === ",") { row.push(value.trim()); value = ""; }
+    else if (character === "\n") { row.push(value.trim()); if (row.some(cell => cell !== "")) rows.push(row); row = []; value = ""; }
+    else if (character !== "\r") value += character;
+  }
+  row.push(value.trim());
+  if (row.some(cell => cell !== "")) rows.push(row);
+  if (quoted) throw new Error("The CSV contains an unclosed quoted value.");
+  return rows;
+}
+
+function setUploadStatus(label, title, detail, error = false) {
+  const status = $("#upload-status");
+  status.classList.toggle("error", error);
+  status.innerHTML = `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(title)}</strong></div><small>${detail}</small>`;
+}
+
+function clearUpload() {
+  state.uploadRows = [];
+  state.uploadFileName = "";
+  state.uploadRunning = false;
+  $("#upload-data-input").value = "";
+  $("#run-upload-predictions").disabled = true;
+  $("#clear-upload").disabled = true;
+  $("#upload-results").innerHTML = '<div class="upload-empty">A preview and batch prediction results will appear here.</div>';
+  setUploadStatus("NO FILE SELECTED", "Upload the sample or a prepared dataset export.", "The algorithm will not use <code>duration_minutes</code> as an input.");
+}
+
+function uploadRowLabel(row, index) {
+  return row.package_id || `row-${index + 1}`;
+}
+
+function renderUploadPreview() {
+  const rows = state.uploadRows;
+  $("#upload-results").innerHTML = `<table class="upload-table"><thead><tr><th>Row</th><th>Hour</th><th>Distance</th><th>Area history</th><th>Courier history</th><th>Actual</th></tr></thead><tbody>${rows.map((row, index) => `<tr><td>${escapeHtml(uploadRowLabel(row, index))}${row.city ? `<small>${escapeHtml(row.city)}</small>` : ""}</td><td>${fmt(row.accept_hour, 2)}</td><td>${fmt(row.distance_km, 2)} km</td><td>${fmt(row.area_historical_eta)} min</td><td>${fmt(row.courier_historical_eta)} min</td><td>${row.duration_minutes == null ? "—" : `${fmt(row.duration_minutes)} min`}</td></tr>`).join("")}</tbody></table>`;
+}
+
+async function loadUploadFile(file) {
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) {
+    setUploadStatus("FILE REJECTED", "The CSV is larger than 2 MB.", "Choose a smaller prepared export with no more than 50 rows.", true);
+    return;
+  }
+  try {
+    const parsed = parseCsv(await file.text());
+    if (parsed.length < 2) throw new Error("The CSV needs a header and at least one data row.");
+    const headers = parsed[0].map(header => header.replace(/^\uFEFF/, "").trim().toLowerCase());
+    const missing = UPLOAD_REQUIRED_FIELDS.filter(field => !headers.includes(field));
+    if (missing.length) throw new Error(`Missing required columns: ${missing.join(", ")}.`);
+    if (parsed.length - 1 > 50) throw new Error("This live demo accepts up to 50 rows per upload.");
+    const numberFields = [...UPLOAD_REQUIRED_FIELDS, "duration_minutes"];
+    const rows = parsed.slice(1).map((values, index) => {
+      const row = Object.fromEntries(headers.map((header, column) => [header, values[column] ?? ""]));
+      numberFields.forEach(field => {
+        if (!(field in row) || row[field] === "") { if (UPLOAD_REQUIRED_FIELDS.includes(field)) throw new Error(`Row ${index + 2}: ${field} is required.`); row[field] = null; return; }
+        row[field] = Number(row[field]);
+        if (!Number.isFinite(row[field])) throw new Error(`Row ${index + 2}: ${field} must be a number.`);
+      });
+      row.package_id = String(row.package_id || `upload-${index + 1}`);
+      return row;
+    });
+    state.uploadRows = rows;
+    state.uploadFileName = file.name;
+    $("#run-upload-predictions").disabled = false;
+    $("#clear-upload").disabled = false;
+    const withOutcomes = rows.filter(row => row.duration_minutes != null).length;
+    setUploadStatus("READY TO PREDICT", `${file.name} · ${rows.length} row${rows.length === 1 ? "" : "s"}`, `${withOutcomes} row${withOutcomes === 1 ? " has" : "s have"} a retrospective outcome for error comparison.`);
+    renderUploadPreview();
+  } catch (error) {
+    state.uploadRows = [];
+    $("#run-upload-predictions").disabled = true;
+    $("#clear-upload").disabled = false;
+    $("#upload-results").innerHTML = `<div class="upload-empty">${escapeHtml(error.message)}</div>`;
+    setUploadStatus("CHECK THE CSV", error.message, "Use the sample file to see the expected prepared-feature format.", true);
+  }
+}
+
+function predictionCell(result, scenario) {
+  const item = result.predictions[scenario];
+  const error = item.absolute_error_minutes == null ? "" : `<small>${fmt(item.absolute_error_minutes)} min error</small>`;
+  return `${fmt(item.prediction_minutes)} min${error}`;
+}
+
+function renderUploadResults(response) {
+  const summary = response.summary;
+  const metric = value => value == null ? "—" : `${fmt(value)} min`;
+  $("#upload-results").innerHTML = `<div class="upload-summary">
+    <div><span>ROWS SCORED</span><strong>${summary.rows_scored}</strong></div>
+    <div><span>TRUSTED MAE</span><strong>${metric(summary.mae_minutes?.clean)}</strong></div>
+    <div><span>UNRELIABLE-FEED MAE</span><strong>${metric(summary.mae_minutes?.poisoned)}</strong></div>
+    <div><span>SAFEGUARDED MAE</span><strong>${metric(summary.mae_minutes?.safeguarded)}</strong></div>
+  </div><table class="upload-table"><thead><tr><th>Row</th><th>Trusted</th><th>After bad data</th><th>With safeguard</th><th>Review</th></tr></thead><tbody>${response.results.map(result => `<tr><td>${escapeHtml(result.package_id)}</td><td>${predictionCell(result, "clean")}</td><td class="upload-poisoned">${predictionCell(result, "poisoned")}</td><td class="upload-safe">${predictionCell(result, "safeguarded")}</td><td>${result.predictions.safeguarded.review.flagged ? '<span class="upload-review">REVIEW</span>' : "Pass"}</td></tr>`).join("")}</tbody></table>`;
+}
+
+async function runUploadPredictions() {
+  if (!state.uploadRows.length || state.uploadRunning) return;
+  state.uploadRunning = true;
+  $("#run-upload-predictions").disabled = true;
+  $("#clear-upload").disabled = true;
+  setUploadStatus("CALCULATING LIVE", `${state.uploadFileName} · ${state.uploadRows.length} rows`, "Running every row through all three fitted model pipelines now.");
+  try {
+    const response = await api("/api/live-demo/upload-predict", {
+      method: "POST",
+      body: JSON.stringify({ rows: state.uploadRows }),
+    });
+    renderUploadResults(response);
+    const outcomeText = response.summary.rows_with_outcomes
+      ? `${response.summary.rows_with_outcomes} rows included outcomes, so MAE is shown above.`
+      : "No outcomes were included, so the table shows prediction-only results.";
+    setUploadStatus("FRESH BATCH RESULT", `${state.uploadRows.length} rows scored across three pipelines`, outcomeText);
+  } catch (error) {
+    setUploadStatus("COULD NOT RUN", error.message, "Check the CSV values and try again.", true);
+    toast(error.message);
+  } finally {
+    state.uploadRunning = false;
+    $("#run-upload-predictions").disabled = !state.uploadRows.length;
+    $("#clear-upload").disabled = !state.uploadRows.length;
+  }
+}
+
+function setupUploadDemo() {
+  const input = $("#upload-data-input");
+  const dropzone = $("#upload-dropzone");
+  input.addEventListener("change", event => loadUploadFile(event.target.files?.[0]));
+  ["dragenter", "dragover"].forEach(type => dropzone.addEventListener(type, event => { event.preventDefault(); dropzone.classList.add("dragging"); }));
+  ["dragleave", "drop"].forEach(type => dropzone.addEventListener(type, event => { event.preventDefault(); dropzone.classList.remove("dragging"); }));
+  dropzone.addEventListener("drop", event => loadUploadFile(event.dataTransfer?.files?.[0]));
+  $("#run-upload-predictions").addEventListener("click", runUploadPredictions);
+  $("#clear-upload").addEventListener("click", clearUpload);
+  clearUpload();
 }
 
 async function loadComparison() {
@@ -721,7 +870,7 @@ function renderSlide() {
 }
 
 async function init() {
-  setupNavigation(); setupReveals(); setupLiveDemo(); setupLabControls(); setupOversight(); setupDeck();
+  setupNavigation(); setupReveals(); setupLiveDemo(); setupUploadDemo(); setupLabControls(); setupOversight(); setupDeck();
   await resolveBackend();
   try {
     await Promise.all([loadHealth(), loadOverview(), loadComparison(), loadDocs(), loadLiveDemoCases()]);

@@ -145,6 +145,44 @@ def test_live_demo_runs_real_models_for_the_same_delivery(monkeypatch):
     assert invalid.status_code == 422
 
 
+def test_uploaded_prepared_rows_run_through_all_three_pipelines():
+    clean, _ = webapp._live_demo_frames()
+    source = clean.head(2)
+    rows = []
+    for _, row in source.iterrows():
+        rows.append(
+            {
+                "package_id": str(row["package_id"]),
+                "city": row["city"],
+                "region_id": str(row["region_id"]),
+                "region_code": row["region_code"],
+                "aoi_type_code": row["aoi_type_code"],
+                "accept_hour": row["accept_hour"],
+                "day_of_week": row["day_of_week"],
+                "distance_km": row["distance_km"],
+                "courier_recent_accepts": row["courier_recent_accepts"],
+                "area_historical_eta": row["area_historical_eta"],
+                "courier_historical_eta": row["courier_historical_eta"],
+                "duration_minutes": row["duration_minutes"],
+            }
+        )
+
+    response = client.post("/api/live-demo/upload-predict", json={"rows": rows})
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["summary"]["rows_scored"] == 2
+    assert payload["summary"]["rows_with_outcomes"] == 2
+    assert set(payload["summary"]["mae_minutes"]) == {"clean", "poisoned", "safeguarded"}
+    assert set(payload["results"][0]["predictions"]) == {"clean", "poisoned", "safeguarded"}
+    assert payload["method"]["outcome_used_as_model_input"] is False
+    assert payload["results"][0]["predictions"]["clean"]["absolute_error_minutes"] is not None
+
+    missing = rows[0].copy()
+    missing.pop("distance_km")
+    invalid = client.post("/api/live-demo/upload-predict", json={"rows": [missing]})
+    assert invalid.status_code == 422
+
+
 def test_case_review_and_validated_decision_log(tmp_path, monkeypatch):
     temporary_log = tmp_path / "overrides.csv"
     monkeypatch.setattr(webapp, "OVERRIDES_PATH", temporary_log)
