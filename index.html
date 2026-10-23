@@ -42,7 +42,6 @@
       <div class="container hero-layout">
         <div class="hero-copy reveal">
           <div class="eyebrow"><span>CASE-A-THON 2026</span><span class="eyebrow-sep">/</span><span>THE MEASURED ANSWER</span></div>
-          <div class="verdict-chip"><span aria-hidden="true"></span> Result: no-go for deployment</div>
           <h1>More data made delivery ETAs <em>worse.</em></h1>
           <p class="hero-lede">On this delivery dataset, a high-volume but unreliable feed pushed predictions farther from the real delivery time. The proposed safeguard helped too little and failed other tests.</p>
           <div class="hero-recommendation">
@@ -56,26 +55,38 @@
           <div class="evidence-stamp"><span class="stamp-icon">✓</span><span><strong id="evidence-label">Measured LaDe experiment</strong><small id="evidence-detail">31,415 orders · 24 matched runs · same future deliveries</small></span></div>
         </div>
 
-        <aside class="hero-proof reveal delay-1" aria-label="The result in three steps">
-          <div class="proof-heading"><span>THE RESULT IN THREE STEPS</span><strong>Same future deliveries. One data source changed.</strong></div>
-          <ol class="proof-steps">
-            <li class="proof-step baseline">
-              <span class="proof-index">01</span>
-              <div><small>TRUSTED-DATA REFERENCE</small><strong id="hero-reference">62.1 min</strong><p>average prediction miss</p></div>
-            </li>
-            <li class="proof-connector"><span>Add a noisy feed</span><i aria-hidden="true">↓</i><small>55% of the evidence</small></li>
-            <li class="proof-step harm">
-              <span class="proof-index">02</span>
-              <div><small>WITH THE NOISY FEED</small><strong id="hero-noisy">64.2 min</strong><p>average prediction miss</p></div>
-              <em id="hero-delta">+2.1 min worse</em>
-            </li>
-            <li class="proof-connector"><span>Apply the safeguard</span><i aria-hidden="true">↓</i><small>weight · back off · review</small></li>
-            <li class="proof-step partial">
-              <span class="proof-index">03</span>
-              <div><small>WITH THE SAFEGUARD</small><strong id="hero-mitigated">63.7 min</strong><p>still worse than the reference</p></div>
-              <em id="hero-recovery">only 0.5 min recovered</em>
-            </li>
-          </ol>
+        <aside class="hero-proof reveal delay-1" id="hero-proof" aria-label="Interactive result in three steps">
+          <div class="proof-heading">
+            <div><span>THE RESULT IN THREE STEPS</span><strong>Same future deliveries. One data source changed.</strong></div>
+            <small>CLICK TO EXPLORE <i aria-hidden="true">→</i></small>
+          </div>
+          <div class="proof-tabs" role="tablist" aria-label="Result steps">
+            <button class="proof-tab active" id="proof-tab-1" type="button" role="tab" aria-selected="true" aria-controls="proof-panel-1" data-proof-step="0"><span>01</span><strong>Trusted data</strong></button>
+            <button class="proof-tab" id="proof-tab-2" type="button" role="tab" aria-selected="false" aria-controls="proof-panel-2" data-proof-step="1" tabindex="-1"><span>02</span><strong>Noisy feed</strong></button>
+            <button class="proof-tab" id="proof-tab-3" type="button" role="tab" aria-selected="false" aria-controls="proof-panel-3" data-proof-step="2" tabindex="-1"><span>03</span><strong>Safeguard</strong></button>
+          </div>
+          <div class="proof-progress" aria-hidden="true"><i id="proof-progress-fill"></i></div>
+          <div class="proof-viewport">
+            <div class="proof-track" id="proof-track">
+              <article class="proof-panel baseline active" id="proof-panel-1" role="tabpanel" aria-labelledby="proof-tab-1">
+                <div class="proof-panel-copy"><span class="proof-index">01</span><small>START WITH TRUSTED DATA</small><h3>Establish the reference.</h3><p>The model learns only from the more reliable delivery evidence.</p></div>
+                <div class="proof-metric"><small>AVERAGE PREDICTION MISS</small><strong id="hero-reference">62.1 <span>min</span></strong><em>Reference point</em></div>
+              </article>
+              <article class="proof-panel harm" id="proof-panel-2" role="tabpanel" aria-labelledby="proof-tab-2" aria-hidden="true">
+                <div class="proof-panel-copy"><span class="proof-index">02</span><small>ADD A HIGH-VOLUME NOISY FEED</small><h3>More evidence, worse answer.</h3><p>The unreliable source becomes 55% of the training evidence.</p></div>
+                <div class="proof-metric"><small>AVERAGE PREDICTION MISS</small><strong id="hero-noisy">64.2 <span>min</span></strong><em id="hero-delta">+2.1 min worse</em></div>
+              </article>
+              <article class="proof-panel partial" id="proof-panel-3" role="tabpanel" aria-labelledby="proof-tab-3" aria-hidden="true">
+                <div class="proof-panel-copy"><span class="proof-index">03</span><small>APPLY WEIGHT · BACK OFF · REVIEW</small><h3>The safeguard falls short.</h3><p>It recovers some accuracy, but does not return to the reference.</p></div>
+                <div class="proof-metric"><small>AVERAGE PREDICTION MISS</small><strong id="hero-mitigated">63.7 <span>min</span></strong><em id="hero-recovery">only 0.5 min recovered</em></div>
+              </article>
+            </div>
+          </div>
+          <div class="proof-nav">
+            <button id="proof-prev" type="button" disabled><span aria-hidden="true">←</span> Previous</button>
+            <span id="proof-count" aria-live="polite">01 / 03</span>
+            <button id="proof-next" type="button">Next result <span aria-hidden="true">→</span></button>
+          </div>
           <div class="proof-verdict"><span>DECISION</span><strong>Hold deployment</strong><p>The safeguard is not reliable enough yet.</p></div>
         </aside>
       </div>

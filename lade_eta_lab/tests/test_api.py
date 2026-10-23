@@ -19,6 +19,9 @@ def test_health_and_overview_use_measured_results():
     assert 'id="docs"' not in website.text
     assert "mechanism-section" not in website.text
     assert 'id="deck-modal"' not in website.text
+    assert "verdict-chip" not in website.text
+    assert 'id="proof-track"' in website.text
+    assert website.text.count('data-proof-step=') == 3
     assert client.get("/lade_eta_lab/static/app.js").status_code == 200
 
     health = client.get("/api/health")

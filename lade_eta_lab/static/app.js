@@ -101,6 +101,56 @@ function setupNavigation() {
   window.addEventListener("scroll", updateScrollState, { passive: true });
 }
 
+function setupHeroProof() {
+  const proof = $("#hero-proof");
+  const track = $("#proof-track");
+  if (!proof || !track) return;
+
+  const tabs = $$(".proof-tab", proof);
+  const panels = $$(".proof-panel", proof);
+  const previous = $("#proof-prev");
+  const next = $("#proof-next");
+  const count = $("#proof-count");
+  const progress = $("#proof-progress-fill");
+  let activeIndex = 0;
+
+  const showStep = (requestedIndex, focusTab = false) => {
+    activeIndex = clamp(requestedIndex, 0, panels.length - 1);
+    proof.dataset.activeStep = String(activeIndex);
+    track.style.transform = `translateX(-${activeIndex * 100}%)`;
+    progress.style.width = `${((activeIndex + 1) / panels.length) * 100}%`;
+    count.textContent = `${String(activeIndex + 1).padStart(2, "0")} / ${String(panels.length).padStart(2, "0")}`;
+    previous.disabled = activeIndex === 0;
+    next.disabled = activeIndex === panels.length - 1;
+
+    tabs.forEach((tab, index) => {
+      const selected = index === activeIndex;
+      tab.classList.toggle("active", selected);
+      tab.setAttribute("aria-selected", String(selected));
+      tab.tabIndex = selected ? 0 : -1;
+    });
+    panels.forEach((panel, index) => {
+      const selected = index === activeIndex;
+      panel.classList.toggle("active", selected);
+      panel.setAttribute("aria-hidden", String(!selected));
+    });
+    if (focusTab) tabs[activeIndex].focus();
+  };
+
+  tabs.forEach((tab, index) => {
+    tab.addEventListener("click", () => showStep(index));
+    tab.addEventListener("keydown", event => {
+      const keys = { ArrowLeft: activeIndex - 1, ArrowRight: activeIndex + 1, Home: 0, End: panels.length - 1 };
+      if (!(event.key in keys)) return;
+      event.preventDefault();
+      showStep(keys[event.key], true);
+    });
+  });
+  previous.addEventListener("click", () => showStep(activeIndex - 1));
+  next.addEventListener("click", () => showStep(activeIndex + 1));
+  showStep(0);
+}
+
 function setupReveals() {
   const observer = new IntersectionObserver(entries => {
     entries.forEach(entry => {
@@ -743,7 +793,7 @@ function setupRoadmapFrame() {
 }
 
 async function init() {
-  setupNavigation(); setupReveals(); setupLiveDemo(); setupUploadDemo(); setupLabControls(); setupOversight(); setupRoadmapFrame();
+  setupNavigation(); setupHeroProof(); setupReveals(); setupLiveDemo(); setupUploadDemo(); setupLabControls(); setupOversight(); setupRoadmapFrame();
   await resolveBackend();
   try {
     await Promise.all([loadHealth(), loadOverview(), loadComparison(), loadLiveDemoCases()]);
