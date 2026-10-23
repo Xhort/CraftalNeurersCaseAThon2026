@@ -1,5 +1,311 @@
-helllo world
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A measured Case-A-Thon result: a noisy high-volume feed made delivery ETAs worse, and the tested safeguard is not ready to deploy.">
+  <title>More Data Made Delivery ETAs Worse · ETA Reliability Lab</title>
+  <link rel="icon" href="data:,">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./lade_eta_lab/static/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
 
-This is a test site
-owhgw 
-wwgohw 
+  <header class="topbar">
+    <a class="brand" href="#overview" aria-label="ETA Reliability Lab home">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span>ETA Reliability Lab</span>
+    </a>
+    <nav class="desktop-nav" aria-label="Primary navigation">
+      <a class="nav-link active" href="#overview">The answer</a>
+      <a class="nav-link" href="#live-demo">Live AI demo</a>
+      <a class="nav-link" href="#lab">Full evidence</a>
+      <a class="nav-link" href="#oversight">Human review</a>
+      <a class="nav-link" href="#docs">Documentation</a>
+    </nav>
+    <div class="status-pill"><span class="status-dot"></span><span id="api-status">Connecting</span></div>
+    <button class="mobile-menu" id="mobile-menu" aria-label="Open navigation" aria-expanded="false">Menu</button>
+  </header>
+  <div class="backend-banner" id="backend-banner" hidden>
+    <strong>Design preview loaded.</strong>
+    <span>Start the FastAPI server to connect the live demo, evidence, documentation, and dispatcher actions.</span>
+    <code>cd lade_eta_lab && source .venv/bin/activate && uvicorn app:app --reload</code>
+  </div>
+
+  <main id="main">
+    <section class="hero" id="overview">
+      <div class="hero-grid" aria-hidden="true"></div>
+      <div class="hero-orb hero-orb-one" aria-hidden="true"></div>
+      <div class="hero-orb hero-orb-two" aria-hidden="true"></div>
+      <div class="container hero-layout">
+        <div class="hero-copy reveal">
+          <div class="eyebrow"><span>CASE-A-THON 2026</span><span class="eyebrow-sep">/</span><span>THE MEASURED ANSWER</span></div>
+          <div class="verdict-chip"><span aria-hidden="true"></span> Result: no-go for deployment</div>
+          <h1>More data made delivery ETAs <em>worse.</em></h1>
+          <p class="hero-lede">On this delivery dataset, a high-volume but unreliable feed pushed predictions farther from the real delivery time. The proposed safeguard helped too little and failed other tests.</p>
+          <div class="hero-recommendation">
+            <span>RECOMMENDATION</span>
+            <div><strong>Do not deploy yet.</strong><small>Improve the safeguard, then test it in a limited one-region shadow pilot.</small></div>
+          </div>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#live-demo">Try the live AI prediction <span aria-hidden="true">↓</span></a>
+            <a class="button button-ghost" href="#lab">Explore the full evidence</a>
+          </div>
+          <div class="evidence-stamp"><span class="stamp-icon">✓</span><span><strong id="evidence-label">Measured LaDe experiment</strong><small id="evidence-detail">31,415 orders · 24 matched runs · same future deliveries</small></span></div>
+        </div>
+
+        <aside class="hero-proof reveal delay-1" aria-label="The result in three steps">
+          <div class="proof-heading"><span>THE RESULT IN THREE STEPS</span><strong>Same future deliveries. One data source changed.</strong></div>
+          <ol class="proof-steps">
+            <li class="proof-step baseline">
+              <span class="proof-index">01</span>
+              <div><small>TRUSTED-DATA REFERENCE</small><strong id="hero-reference">62.1 min</strong><p>average prediction miss</p></div>
+            </li>
+            <li class="proof-connector"><span>Add a noisy feed</span><i aria-hidden="true">↓</i><small>55% of the evidence</small></li>
+            <li class="proof-step harm">
+              <span class="proof-index">02</span>
+              <div><small>WITH THE NOISY FEED</small><strong id="hero-noisy">64.2 min</strong><p>average prediction miss</p></div>
+              <em id="hero-delta">+2.1 min worse</em>
+            </li>
+            <li class="proof-connector"><span>Apply the safeguard</span><i aria-hidden="true">↓</i><small>weight · back off · review</small></li>
+            <li class="proof-step partial">
+              <span class="proof-index">03</span>
+              <div><small>WITH THE SAFEGUARD</small><strong id="hero-mitigated">63.7 min</strong><p>still worse than the reference</p></div>
+              <em id="hero-recovery">only 0.5 min recovered</em>
+            </li>
+          </ol>
+          <div class="proof-verdict"><span>DECISION</span><strong>Hold deployment</strong><p>The safeguard is not reliable enough yet.</p></div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section live-demo-section" id="live-demo">
+      <div class="container">
+        <div class="live-demo-heading reveal">
+          <div>
+            <span class="section-kicker light">01 · LIVE AI PREDICTION</span>
+            <h2>Watch one delivery change<br>when unreliable data reaches the AI.</h2>
+          </div>
+          <p>This is real server-side inference. First run the trusted pipeline. Then run the full degraded scenario—retrained model plus matching degraded inputs—and test the safeguard.</p>
+        </div>
+
+        <div class="live-demo-shell reveal">
+          <aside class="live-case-panel">
+            <span class="live-step-label">STEP 1 · CHOOSE ONE DELIVERY</span>
+            <label for="live-case-select">Held-out evaluation case</label>
+            <select id="live-case-select" disabled><option>Loading real cases…</option></select>
+            <dl class="live-case-facts">
+              <div><dt>Package</dt><dd id="live-case-id">—</dd></div>
+              <div><dt>Service area</dt><dd id="live-case-region">—</dd></div>
+              <div><dt>Accepted</dt><dd id="live-case-time">—</dd></div>
+            </dl>
+            <div class="live-integrity-note">
+              <strong>Same delivery, disclosed scenarios</strong>
+              <p id="live-selection-note">The package and real outcome stay fixed. The degraded scenario changes both training evidence and matching live inputs.</p>
+            </div>
+          </aside>
+
+          <div class="live-inference-stage">
+            <div class="live-stage-topline">
+              <div><span class="live-dot"></span><strong id="live-algorithm-label">REAL AI · PREDICTION CALCULATED NOW</strong></div>
+              <span id="live-run-status">READY TO RUN</span>
+            </div>
+
+            <div class="live-controls" aria-label="Live inference steps">
+              <button class="live-control primary" id="run-clean-prediction" disabled><span>1</span>Run normal AI</button>
+              <button class="live-control" id="run-poisoned-prediction" disabled><span>2</span>Add unreliable data</button>
+              <button class="live-control" id="run-safeguarded-prediction" disabled><span>3</span>Apply safeguard</button>
+              <button class="live-reset" id="reset-live-demo" disabled>Reset</button>
+            </div>
+
+            <div class="prediction-journey" aria-live="polite">
+              <article class="prediction-state clean" id="live-clean-card">
+                <div class="prediction-state-head"><span>01</span><div><small>TRUSTED MODEL + INPUT</small><strong>Normal AI</strong></div></div>
+                <div class="live-prediction"><strong id="live-clean-value">—</strong><span>minutes</span></div>
+                <p id="live-clean-copy">Run the fitted AI on the untouched held-out evidence.</p>
+                <div class="prediction-signal"><span>Source trust</span><strong id="live-clean-trust">100%</strong></div>
+              </article>
+              <div class="journey-arrow" aria-hidden="true">→</div>
+              <article class="prediction-state poisoned locked" id="live-poisoned-card">
+                <div class="prediction-state-head"><span>02</span><div><small>DEGRADED TRAINING + INPUT</small><strong>AI after bad data</strong></div></div>
+                <div class="live-prediction"><strong id="live-poisoned-value">—</strong><span>minutes</span></div>
+                <p id="live-poisoned-copy">Use the model retrained on the simulated unreliable feed and this delivery’s matching degraded inputs.</p>
+                <div class="prediction-signal"><span>Change from clean</span><strong id="live-poisoned-delta">—</strong></div>
+              </article>
+              <div class="journey-arrow" aria-hidden="true">→</div>
+              <article class="prediction-state safeguarded locked" id="live-safeguarded-card">
+                <div class="prediction-state-head"><span>03</span><div><small>BUNDLED SAFEGUARD POLICY</small><strong>AI with safeguard</strong></div></div>
+                <div class="live-prediction"><strong id="live-safeguarded-value">—</strong><span>minutes</span></div>
+                <p id="live-safeguarded-copy">Weight trust, back off suspicious inputs, and check review risk.</p>
+                <div class="prediction-signal"><span>Human review</span><strong id="live-review-status">—</strong></div>
+              </article>
+            </div>
+
+            <div class="live-result-summary" id="live-result-summary">
+              <div><span>WHAT THIS DEMONSTRATES</span><strong id="live-result-title">Start with the clean prediction.</strong></div>
+              <p id="live-result-copy">Each step makes a fresh request to the local FastAPI backend and runs the corresponding fitted model.</p>
+              <div class="actual-outcome"><span>ACTUAL DELIVERY TIME</span><strong id="live-actual-value">Hidden until comparison</strong><small>Used only for retrospective evaluation—never as a prediction input.</small></div>
+            </div>
+
+            <p class="live-model-caveat"><strong>What is live?</strong> Training happened beforehand for speed and repeatability. Every button reruns server-side inference across the fixed held-out batch and returns this delivery’s result. The real outcome is never a model input.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section lab-section" id="lab">
+      <div class="container">
+        <div class="lab-heading reveal">
+          <div><span class="section-kicker light">02 · FULL EXPERIMENT</span><h2>Start with the conclusion.<br>Open the detail when you need it.</h2></div>
+          <p>The key scenario is already selected: the noisy feed, with the safeguard off. Turn the safeguard on to see whether it recovers the loss.</p>
+        </div>
+
+        <div class="lab-reading-guide reveal">
+          <span>HOW TO READ THIS</span>
+          <p><strong>Read the plain-language result first.</strong> The figures and timeline underneath are supporting evidence, not the headline.</p>
+        </div>
+
+        <div class="lab-shell reveal">
+          <div class="control-rail">
+            <div class="control-title"><span>STEP 1 · CHOOSE THE DATA</span><small>What reaches the ETA model?</small></div>
+            <div class="condition-list" role="radiogroup" aria-label="Experiment condition">
+              <button class="condition-button" data-condition="reference" role="radio" aria-checked="false"><span class="condition-dot reference"></span><span><strong>Trusted data</strong><small>Comparison point</small></span></button>
+              <button class="condition-button" data-condition="stale" role="radio" aria-checked="false"><span class="condition-dot stale"></span><span><strong>Old data</strong><small>Frozen area history</small></span></button>
+              <button class="condition-button active" data-condition="low_quality" role="radio" aria-checked="true"><span class="condition-dot low"></span><span><strong>Noisy feed</strong><small>High volume, low reliability</small></span></button>
+              <button class="condition-button" data-condition="combined" role="radio" aria-checked="false"><span class="condition-dot combined"></span><span><strong>Both problems</strong><small>Old data + noisy feed</small></span></button>
+            </div>
+            <div class="mitigation-control">
+              <div><strong>Step 2 · Safeguard</strong><small>Weight, back off, review</small></div>
+              <label class="switch"><input type="checkbox" id="mitigation-toggle"><span></span><em id="mitigation-label">Off</em></label>
+            </div>
+            <button class="rail-action" id="auto-compare">Compare safeguard on ↔ off</button>
+          </div>
+
+          <div class="evidence-panel">
+            <div class="panel-topline"><div><span class="live-dot"></span><span id="scenario-label">NOISY FEED · SAFEGUARD OFF</span></div><span id="scenario-mode">REAL EXPERIMENT RESULTS</span></div>
+            <div class="interpretation" id="interpretation" aria-live="polite">
+              <div><span>PLAIN-LANGUAGE RESULT</span><strong id="scenario-outcome">The unreliable feed makes ETAs worse.</strong></div>
+              <p>The feed raises the average prediction miss by 2.1 minutes compared with the trusted-data reference.</p>
+            </div>
+            <div class="metric-grid key-metrics">
+              <div class="metric-card primary"><span>Average prediction miss</span><strong id="metric-mae">64.2 min</strong><small>lower is better</small></div>
+              <div class="metric-card"><span>Sent to a dispatcher</span><strong id="metric-deferred">10.7%</strong><small>share needing human review</small></div>
+            </div>
+            <details class="supporting-details">
+              <summary><span>Explore the detailed results</span><small>Timeline, large misses, repeatability, and data-quality signals</small></summary>
+              <div class="supporting-metrics">
+                <div class="metric-card"><span>Predictions off by 15+ minutes</span><strong id="metric-late">86%</strong><small>large-miss rate</small></div>
+                <div class="metric-card"><span>Consistency across repeat runs</span><strong id="metric-spread">±0.3</strong><small>smaller variation is better</small></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title"><div><strong>How far off were ETAs each day?</strong><small>Each point is one evaluation day, averaged across three repeat runs</small></div><span class="chart-legend"><i></i>average miss</span></div>
+                <div id="timeline-chart" class="chart-area" role="img" aria-label="Average ETA prediction miss by evaluation day"></div>
+                <div class="quality-row">
+                  <div><span>Age of area history</span><strong id="quality-age">0 days</strong></div>
+                  <div><span>Noisy-feed share</span><strong id="quality-share">55%</strong></div>
+                  <div><span>Source trust score</span><strong id="quality-reliability">35%</strong></div>
+                  <div><span>Handled without review</span><strong id="quality-coverage">89%</strong></div>
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <div class="comparison-block reveal">
+          <div class="comparison-copy"><span class="section-kicker">THE FULL READINESS CHECK</span><h3>The safeguard helps one test—and fails the overall decision.</h3><p>We repeated the same comparison with trusted data, old data, the noisy feed, and both problems together.</p><div class="honesty-note"><strong>No-go:</strong> the safeguard worsens the old-data and combined results, while the review policy sends every old-data and combined case to a dispatcher.</div></div>
+          <div class="comparison-chart" id="comparison-chart" role="img" aria-label="Eight-way comparison of ETA error"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section mechanism-section">
+      <div class="container">
+        <div class="section-intro compact reveal"><span class="section-kicker">03 · THE MECHANISM</span><h2>Follow the failure,<br>not just the score.</h2></div>
+        <div class="mechanism-flow reveal">
+          <div class="mechanism-step"><span>01</span><i class="mechanism-icon">⇣</i><strong>Data enters</strong><p>Area history freezes. A low-reliability feed grows to 55% of records.</p></div>
+          <div class="mechanism-arrow">→</div>
+          <div class="mechanism-step"><span>02</span><i class="mechanism-icon">∿</i><strong>Features bend</strong><p>Distance and historical ETA drift away from the clean reference.</p></div>
+          <div class="mechanism-arrow">→</div>
+          <div class="mechanism-step"><span>03</span><i class="mechanism-icon">ƒ</i><strong>Model learns</strong><p>The noisy source contributes more examples than the accurate source.</p></div>
+          <div class="mechanism-arrow">→</div>
+          <div class="mechanism-step"><span>04</span><i class="mechanism-icon">!</i><strong>Decision changes</strong><p>ETA error and review workload change on the same future orders.</p></div>
+        </div>
+        <div class="fix-grid reveal">
+          <div class="fix-intro"><span class="section-kicker">THE SAFEGUARD</span><h3>Trust data in proportion to its evidence.</h3><p>The safeguard changes influence rather than deleting every suspicious record.</p></div>
+          <div class="fix-item"><span>1</span><div><strong>Reliability weighting</strong><p>Low-trust training rows count less.</p></div></div>
+          <div class="fix-item"><span>2</span><div><strong>Safe input backoff</strong><p>Suspicious values move toward robust defaults.</p></div></div>
+          <div class="fix-item"><span>3</span><div><strong>Human deferral</strong><p>High-risk outputs show evidence and request review.</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section oversight-section" id="oversight">
+      <div class="container">
+        <div class="oversight-heading reveal"><div><span class="section-kicker light">04 · HUMAN REVIEW</span><h2>When the model hesitates,<br>the person gets the evidence.</h2></div><p>This is a walkthrough, not an illusion of autonomy. The dispatcher can accept, correct, or escalate—and every action is logged.</p></div>
+        <div class="dispatcher-shell reveal">
+          <div class="dispatcher-topbar"><div class="dispatcher-brand"><span>●</span> Dispatch review queue</div><div><label for="case-select">Flagged order</label><select id="case-select"><option>Loading…</option></select></div></div>
+          <div class="dispatcher-body">
+            <aside class="case-context">
+              <span class="case-status">NEEDS REVIEW</span>
+              <h3 id="case-id">—</h3>
+              <dl><div><dt>City</dt><dd id="case-city">—</dd></div><div><dt>Region</dt><dd id="case-region">—</dd></div><div><dt>Service date</dt><dd id="case-date">—</dd></div></dl>
+              <button class="text-button" id="next-case">Next flagged order →</button>
+            </aside>
+            <div class="prediction-focus">
+              <div class="prediction-label">MODEL ETA</div><div class="prediction-value"><strong id="case-eta">—</strong><span>minutes</span></div><div class="prediction-range">Expected range <strong id="case-range">—</strong></div>
+              <div class="risk-reason"><span>WHY REVIEW?</span><p id="case-reason">Loading evidence…</p></div>
+            </div>
+            <div class="evidence-list">
+              <h4>Evidence available to the dispatcher</h4>
+              <div class="evidence-row"><span>Data age</span><strong id="case-age">—</strong><div class="evidence-meter"><i id="case-age-meter"></i></div></div>
+              <div class="evidence-row"><span>Source reliability</span><strong id="case-reliability">—</strong><div class="evidence-meter"><i id="case-reliability-meter"></i></div></div>
+              <div class="evidence-row"><span>Unreliable feed share</span><strong id="case-share">—</strong><div class="evidence-meter"><i id="case-share-meter"></i></div></div>
+              <p class="guardrail">Ground-truth duration is hidden during review and used only for offline evaluation.</p>
+            </div>
+          </div>
+          <div class="decision-bar">
+            <div class="review-timer"><span>Review time</span><strong id="review-timer">00:00</strong></div>
+            <div class="decision-actions"><button class="decision-button accept" data-decision="accept">Accept ETA</button><button class="decision-button override" data-decision="override">Correct ETA</button><button class="decision-button escalate" data-decision="escalate">Escalate</button></div>
+          </div>
+        </div>
+        <div class="oversight-foot reveal"><div><span>WHO REVIEWS</span><strong>Qualified dispatcher</strong></div><div><span>WHEN TO DEFER</span><strong>Evidence crosses approved risk threshold</strong></div><div><span>WHAT GETS LOGGED</span><strong>Evidence, action, correction, review time</strong></div></div>
+      </div>
+    </section>
+
+    <section class="section docs-section" id="docs">
+      <div class="container">
+        <div class="docs-heading reveal"><div><span class="section-kicker">05 · REQUIRED FILES</span><h2>Methods, results,<br>and presentation.</h2></div><p>Everything the competition requests: setup, data manifest, experiment details, governance, machine-readable results, presentation mode, and a recorded fallback.</p></div>
+        <div class="docs-shell reveal">
+          <aside class="docs-tabs" id="docs-tabs" aria-label="Documentation pages"></aside>
+          <article class="docs-content" id="docs-content"><div class="doc-loading">Loading documentation…</div></article>
+        </div>
+        <div class="downloads reveal">
+          <div><span class="section-kicker">MACHINE-READABLE EVIDENCE</span><h3>Take the results with you.</h3></div>
+          <div class="download-grid">
+            <a href="/api/downloads/summary.csv" data-api-path="/api/downloads/summary.csv" download><span>CSV</span><strong>Summary</strong><small>8 matched conditions</small></a>
+            <a href="/api/downloads/timeline.csv" data-api-path="/api/downloads/timeline.csv" download><span>CSV</span><strong>Timeline</strong><small>Performance by day</small></a>
+            <a href="/api/downloads/data_manifest.json" data-api-path="/api/downloads/data_manifest.json" download><span>JSON</span><strong>Data manifest</strong><small>Source and split record</small></a>
+            <a href="/api/downloads/modification_log.csv" data-api-path="/api/downloads/modification_log.csv" download><span>CSV</span><strong>Change log</strong><small>Injected defects</small></a>
+          </div>
+        </div>
+        <div class="submission-tools reveal">
+          <div><span class="section-kicker">10-MINUTE PRESENTATION</span><h3>Present the same evidence shown above.</h3><p>Use the concise slide mode for the live presentation, or the recorded version if the demonstration cannot run.</p></div>
+          <div class="submission-actions"><button class="button button-primary" id="launch-deck">Launch presentation</button><button class="button button-ghost" id="auto-demo">Auto-play slides</button><a class="button button-ghost" href="/api/downloads/fallback_demo.mp4" data-api-path="/api/downloads/fallback_demo.mp4" download>Download fallback video</a></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer><div class="container footer-layout"><div class="brand inverse"><span class="brand-mark"><i></i><i></i><i></i></span><span>ETA Reliability Lab</span></div><p>Built for the William & Mary AI Club Case-A-Thon 2026 · Local FastAPI prototype</p><a href="/docs" data-api-path="/docs" target="_blank" rel="noreferrer">Open API docs ↗</a></div></footer>
+
+  <div class="modal" id="override-modal" aria-hidden="true"><div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="override-title"><button class="modal-close" data-close-modal aria-label="Close">×</button><span class="section-kicker">DISPATCHER CORRECTION</span><h3 id="override-title">Enter a safer ETA</h3><p>The original prediction remains in the audit log.</p><label>Corrected ETA in minutes<input id="override-value" type="number" min="1" max="360" step="1"></label><label>Reason for correction<textarea id="override-note" rows="3" placeholder="What evidence changed your decision?"></textarea></label><button class="button button-primary full" id="save-override">Save correction</button></div></div>
+
+  <div class="deck-modal" id="deck-modal" aria-hidden="true"><div class="deck-toolbar"><span id="deck-count">01 / 10</span><div class="deck-progress"><i id="deck-progress"></i></div><span id="deck-timer">10:00</span><button id="deck-close">Exit ×</button></div><div class="deck-stage" id="deck-stage"></div><button class="deck-nav prev" id="deck-prev" aria-label="Previous slide">←</button><button class="deck-nav next" id="deck-next" aria-label="Next slide">→</button><div class="speaker-note" id="speaker-note"></div></div>
+
+  <div class="toast" id="toast" role="status"></div>
+  <script src="./lade_eta_lab/static/app.js" defer></script>
+</body>
+</html>

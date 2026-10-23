@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+data/raw/*.csv
+artifacts/*.joblib
+results/*.csv
+results/*.json
+demo/fallback_frames/
+!data/raw/.gitkeep
+!artifacts/.gitkeep
+!results/.gitkeep
+
