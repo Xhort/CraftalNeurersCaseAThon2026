@@ -72,8 +72,33 @@ def model_payload(scenario: str) -> dict[str, Any]:
     }
 
 
-def live_payload() -> dict[str, Any]:
+def evaluate_exported_model(model: dict[str, Any], vector: list[float | None]) -> float:
+    """Mirror the Worker tree traversal so a bad export fails before deployment."""
+    values = [
+        model["imputer"][index] if value is None or not math.isfinite(value) else value
+        for index, value in enumerate(vector)
+    ]
+    prediction = model["baseline"]
+    for tree in model["trees"]:
+        node_index = 0
+        while True:
+            feature, threshold, missing_left, left, right, leaf_value, is_leaf = tree[node_index]
+            if is_leaf:
+                prediction += leaf_value
+                break
+            value = values[feature]
+            node_index = left if (not math.isfinite(value) and missing_left) or value <= threshold else right
+    return prediction
+
+
+def live_payload(models: dict[str, Any]) -> dict[str, Any]:
     clean, poisoned = api._live_demo_frames()
+    source_frames = {"clean": clean, "poisoned": poisoned, "safeguarded": poisoned}
+    fitted_models = {scenario: api._load_live_model(scenario) for scenario in SCENARIOS}
+    effective_frames = {
+        scenario: fitted_models[scenario]._model_frame(source_frames[scenario])
+        for scenario in SCENARIOS
+    }
     records: dict[str, Any] = {}
     for index, (package_id, _, _) in zip(
         api._live_demo_case_indices(), api._LIVE_DEMO_CASES, strict=True
@@ -95,12 +120,22 @@ def live_payload() -> dict[str, Any]:
                 "and the fixed-batch safeguard context were prepared in advance for a fast, repeatable demo."
             )
             templates[scenario] = response
-            source = clean if scenario == "clean" else poisoned
-            effective = api._load_live_model(scenario)._model_frame(source)
             vectors[scenario] = [
-                None if np.isnan(float(effective.iloc[index][name])) else float(effective.iloc[index][name])
+                None
+                if np.isnan(float(effective_frames[scenario].iloc[index][name]))
+                else float(effective_frames[scenario].iloc[index][name])
                 for name in MODEL_FEATURES
             ]
+            exported_prediction = evaluate_exported_model(models[scenario], vectors[scenario])
+            if not np.isclose(
+                round(exported_prediction, 1),
+                float(response["prediction_minutes"]),
+                atol=0.05,
+            ):
+                raise RuntimeError(
+                    f"Exported {scenario} model changed prediction for package {package_id}: "
+                    f"{exported_prediction} != {response['prediction_minutes']}"
+                )
         records[package_id] = {
             "templates": templates,
             "vectors": vectors,
@@ -109,33 +144,23 @@ def live_payload() -> dict[str, Any]:
     return {
         "cases": api.live_demo_cases(),
         "records": records,
-        "models": {scenario: model_payload(scenario) for scenario in SCENARIOS},
+        "models": models,
     }
 
 
 def evidence_payload() -> dict[str, Any]:
     timelines: dict[str, Any] = {}
     case_sets: dict[str, Any] = {}
-    decision_lookup: dict[str, Any] = {}
     for condition in api.CONDITIONS:
         for mitigated in (False, True):
             key = f"{condition}:{str(mitigated).lower()}"
             timelines[key] = api.timeline(condition=condition, mitigated=mitigated)
-            for flagged_only in (False, True):
-                case_key = f"{key}:{str(flagged_only).lower()}"
-                payload = api.cases(
-                    condition=condition,
-                    mitigated=mitigated,
-                    flagged_only=flagged_only,
-                    limit=300,
-                )
-                case_sets[case_key] = payload
-                for record in payload["records"]:
-                    lookup_key = f"{record['package_id']}:{condition}:{str(mitigated).lower()}"
-                    decision_lookup[lookup_key] = {
-                        "model_eta_minutes": record["prediction_minutes"],
-                        "actual_minutes_demo_only": record["duration_minutes"],
-                    }
+            case_sets[key] = api.cases(
+                condition=condition,
+                mitigated=mitigated,
+                flagged_only=False,
+                limit=300,
+            )
 
     docs = api.docs_index()
     doc_content = {
@@ -147,14 +172,14 @@ def evidence_payload() -> dict[str, Any]:
         "comparison": api.comparison(),
         "timelines": timelines,
         "cases": case_sets,
-        "decisionLookup": decision_lookup,
         "docs": docs,
         "docContent": doc_content,
     }
 
 
 def main() -> None:
-    payload = clean_json({"evidence": evidence_payload(), "live": live_payload()})
+    models = {scenario: model_payload(scenario) for scenario in SCENARIOS}
+    payload = clean_json({"evidence": evidence_payload(), "live": live_payload(models)})
     encoded = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
     OUTPUT_PATH.write_text(
         "// Generated by lade_eta_lab/scripts/export_worker_bundle.py.\n"

@@ -21,6 +21,7 @@ const state = {
 };
 
 let API_BASE = "";
+const requestCache = new Map();
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -29,29 +30,42 @@ const pct = (value, digits = 0) => `${(Number(value) * 100).toFixed(digits)}%`;
 const clamp = (value, low, high) => Math.min(high, Math.max(low, value));
 
 async function api(path, options = {}) {
-  const response = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-    ...options,
-  });
-  if (!response.ok) {
-    let detail = `Request failed (${response.status})`;
-    try { detail = (await response.json()).detail || detail; } catch (_) {}
-    throw new Error(detail);
+  const { headers = {}, ...fetchOptions } = options;
+  const method = String(fetchOptions.method || "GET").toUpperCase();
+  const requestHeaders = { ...headers };
+  if (fetchOptions.body && !Object.keys(requestHeaders).some(name => name.toLowerCase() === "content-type")) {
+    requestHeaders["Content-Type"] = "application/json";
   }
-  return response.json();
+  const cacheable = method === "GET"
+    && path !== "/api/health"
+    && !path.startsWith("/api/decisions");
+  const cacheKey = `${API_BASE}${path}`;
+  if (cacheable && requestCache.has(cacheKey)) return requestCache.get(cacheKey);
+
+  const pending = (async () => {
+    const response = await fetch(cacheKey, { ...fetchOptions, method, headers: requestHeaders });
+    if (!response.ok) {
+      let detail = `Request failed (${response.status})`;
+      try { detail = (await response.json()).detail || detail; } catch (_) {}
+      throw new Error(detail);
+    }
+    return response.json();
+  })();
+  if (cacheable) requestCache.set(cacheKey, pending);
+  try {
+    return await pending;
+  } catch (error) {
+    if (cacheable) requestCache.delete(cacheKey);
+    throw error;
+  }
 }
 
-async function resolveBackend() {
-  if (window.location.protocol === "file:") {
+function resolveBackend() {
+  const localHost = ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
+  if (window.location.protocol === "file:" || (localHost && window.location.port !== "8000")) {
     API_BASE = "http://127.0.0.1:8000";
   } else {
-    try {
-      const response = await fetch("/api/health", { cache: "no-store" });
-      if (!response.ok) throw new Error("No API on the preview origin");
-      API_BASE = "";
-    } catch (_) {
-      API_BASE = "http://127.0.0.1:8000";
-    }
+    API_BASE = "";
   }
   $$('[data-api-path]').forEach(link => {
     link.href = `${API_BASE}${link.dataset.apiPath}`;

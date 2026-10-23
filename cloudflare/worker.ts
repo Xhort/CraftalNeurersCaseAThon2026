@@ -93,6 +93,16 @@ function livePredictions(record: any): Record<Scenario, number> {
   return result;
 }
 
+function casePayload(condition: string, mitigated: boolean): any {
+  return (EDGE_DATA.evidence.cases as Record<string, any>)[`${condition}:${mitigated}`];
+}
+
+function caseRecords(condition: string, mitigated: boolean, flaggedOnly: boolean): any[] {
+  const records = casePayload(condition, mitigated).records as any[];
+  if (!flaggedOnly || !records.some((record) => record.flagged_for_review)) return records;
+  return records.filter((record) => record.flagged_for_review);
+}
+
 async function parseJsonBody(request: Request): Promise<any> {
   if (!(request.headers.get("content-type") ?? "").includes("application/json")) {
     throw new Error("Send a JSON request body.");
@@ -140,11 +150,14 @@ export class DecisionStore extends DurableObject<Env> {
     }
     const packageId = String(body.package_id ?? "");
     const condition = String(body.condition ?? "");
-    const mitigated = Boolean(body.mitigated);
+    if (!CONDITIONS.has(condition) || typeof body.mitigated !== "boolean") {
+      return errorResponse(422, "A valid condition and mitigated value are required.");
+    }
+    const mitigated = body.mitigated;
     const action = String(body.action ?? "");
     const reviewer = String(body.reviewer ?? "Demo dispatcher").trim();
-    const lookupKey = `${packageId}:${condition}:${String(mitigated)}`;
-    const matched = (EDGE_DATA.evidence.decisionLookup as Record<string, any>)[lookupKey];
+    const matched = (casePayload(condition, mitigated).records as any[])
+      .find((record) => String(record.package_id) === packageId);
     if (!matched) return errorResponse(404, "The selected case was not found in the fixed evaluation set.");
     if (!["accept", "override", "escalate"].includes(action)) {
       return errorResponse(422, "Action must be accept, override, or escalate.");
@@ -154,20 +167,31 @@ export class DecisionStore extends DurableObject<Env> {
     if (action === "override" && (!Number.isFinite(override) || override < 1 || override > 360)) {
       return errorResponse(422, "A valid override_minutes value is required for an override.");
     }
+    if (action !== "override" && override !== null) {
+      return errorResponse(422, "override_minutes is only valid for an override.");
+    }
     if (!reviewer || reviewer.length > 80) return errorResponse(422, "Reviewer is required.");
+    const reviewSeconds = body.review_seconds === null || body.review_seconds === undefined
+      ? null : Number(body.review_seconds);
+    if (reviewSeconds !== null
+      && (!Number.isFinite(reviewSeconds) || reviewSeconds < 0 || reviewSeconds > 3600)) {
+      return errorResponse(422, "review_seconds must be between 0 and 3600.");
+    }
+    const note = String(body.note ?? "");
+    if (note.length > 500) return errorResponse(422, "Note must be 500 characters or fewer.");
 
     const entry: Decision = {
       timestamp_utc: new Date().toISOString(),
       package_id: packageId,
       condition,
       mitigated,
-      model_eta_minutes: rounded(Number(matched.model_eta_minutes), 3),
-      actual_minutes_demo_only: rounded(Number(matched.actual_minutes_demo_only), 3),
+      model_eta_minutes: rounded(Number(matched.prediction_minutes), 3),
+      actual_minutes_demo_only: rounded(Number(matched.duration_minutes), 3),
       action,
       override_minutes: action === "override" ? override : null,
       reviewer,
-      review_seconds: body.review_seconds ?? null,
-      note: String(body.note ?? "").slice(0, 500),
+      review_seconds: reviewSeconds,
+      note,
     };
     await this.ctx.storage.put(
       `${DECISION_PREFIX}${entry.timestamp_utc}:${crypto.randomUUID()}`, entry,
@@ -223,9 +247,8 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
     const rawLimit = Number.parseInt(url.searchParams.get("limit") ?? "80", 10);
     const limit = Math.max(1, Math.min(Number.isFinite(rawLimit) ? rawLimit : 80, 300));
     if (!CONDITIONS.has(condition)) return errorResponse(422, "Unknown experiment condition.");
-    const key = `${condition}:${mitigated}:${flaggedOnly}`;
-    const payload = (EDGE_DATA.evidence.cases as Record<string, any>)[key];
-    return jsonResponse({ total: Math.min(limit, payload.records.length), records: payload.records.slice(0, limit) });
+    const records = caseRecords(condition, mitigated, flaggedOnly);
+    return jsonResponse({ total: Math.min(limit, records.length), records: records.slice(0, limit) });
   }
   if (path === "/api/live-demo/cases" && request.method === "GET") {
     return jsonResponse(EDGE_DATA.live.cases);
