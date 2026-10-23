@@ -105,9 +105,9 @@ async function loadHealth() {
     $(".status-dot").classList.toggle("online", health.results_ready);
     $("#backend-banner").hidden = true;
   } catch (error) {
-    $("#api-status").textContent = "Design preview · backend offline";
+    $("#api-status").textContent = "Live backend temporarily offline";
     $("#backend-banner").hidden = false;
-    toast("The design is loaded. Start FastAPI to connect the live evidence.");
+    toast("The design is loaded, but the online evidence service did not respond. Try refreshing.");
   }
 }
 
@@ -172,7 +172,7 @@ function resetLiveDemo() {
   $("#live-safeguarded-copy").textContent = "Weight trust, back off suspicious inputs, and check review risk.";
   $("#live-review-status").textContent = "—";
   $("#live-result-title").textContent = "Start with the trusted prediction.";
-  $("#live-result-copy").textContent = "Each step makes a fresh request to the local FastAPI backend and runs the corresponding fitted model.";
+  $("#live-result-copy").textContent = "Each step makes a fresh request to the online backend and evaluates the corresponding fitted model.";
   $("#live-actual-value").textContent = "Hidden until comparison";
   $("#live-algorithm-label").textContent = "REAL AI · PREDICTION CALCULATED NOW";
   $("#live-run-status").textContent = state.liveCases.length ? "READY TO RUN" : "LOADING CASES";
@@ -205,10 +205,10 @@ async function loadLiveDemoCases() {
     renderLiveCase();
   } catch (error) {
     state.liveCases = [];
-    $("#live-case-select").innerHTML = "<option>Start FastAPI to load cases</option>";
+    $("#live-case-select").innerHTML = "<option>Live cases are temporarily unavailable</option>";
     $("#live-case-select").disabled = true;
-    $("#live-run-status").textContent = "BACKEND NEEDED";
-    $("#live-result-title").textContent = "The interface is ready; the local API is not connected.";
+    $("#live-run-status").textContent = "BACKEND OFFLINE";
+    $("#live-result-title").textContent = "The interface is ready; the online API did not respond.";
     $("#live-result-copy").textContent = error.message;
     syncLiveControls();
   }

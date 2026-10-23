@@ -24,7 +24,7 @@
 5. Click **Apply safeguard**. Explain the bundled policy and whether it recovered error and/or deferred to a person.
 6. Switch to **Delivery D · counterexample** if time permits. State: “Not every delivery worsens. That is why the 3,407-case aggregate—not this curated example—supports the recommendation.”
 
-The model artifacts are fitted in advance. Each click performs fresh FastAPI inference against the same fixed held-out batch and returns one package. The outcome endpoint is not called until after the trusted-versus-degraded comparison.
+The model artifacts are fitted in advance. Online, each click asks the Cloudflare Worker to evaluate the exported fitted trees for the selected fixed held-out package. The safeguard keeps the registered batch-median preprocessing context. The outcome endpoint is not called until after the trusted-versus-degraded comparison.
 
 ## Recorded fallback demo
 

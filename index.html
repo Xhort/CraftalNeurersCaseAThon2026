@@ -30,9 +30,8 @@
     <button class="mobile-menu" id="mobile-menu" aria-label="Open navigation" aria-expanded="false">Menu</button>
   </header>
   <div class="backend-banner" id="backend-banner" hidden>
-    <strong>Design preview loaded.</strong>
-    <span>Start the FastAPI server to connect the live demo, evidence, documentation, and dispatcher actions.</span>
-    <code>cd lade_eta_lab && source .venv/bin/activate && uvicorn app:app --reload</code>
+    <strong>Live backend unavailable.</strong>
+    <span>Refresh in a moment to reconnect the live demo, evidence, documentation, and dispatcher actions.</span>
   </div>
 
   <main id="main">
@@ -146,11 +145,11 @@
 
             <div class="live-result-summary" id="live-result-summary">
               <div><span>WHAT THIS DEMONSTRATES</span><strong id="live-result-title">Start with the clean prediction.</strong></div>
-              <p id="live-result-copy">Each step makes a fresh request to the local FastAPI backend and runs the corresponding fitted model.</p>
+              <p id="live-result-copy">Each step makes a fresh request to the online backend and evaluates the corresponding fitted model.</p>
               <div class="actual-outcome"><span>ACTUAL DELIVERY TIME</span><strong id="live-actual-value">Hidden until comparison</strong><small>Used only for retrospective evaluation—never as a prediction input.</small></div>
             </div>
 
-            <p class="live-model-caveat"><strong>What is live?</strong> Training happened beforehand for speed and repeatability. Every button reruns server-side inference across the fixed held-out batch and returns this delivery’s result. The real outcome is never a model input.</p>
+            <p class="live-model-caveat"><strong>What is live?</strong> Training happened beforehand for speed and repeatability. Every button evaluates the exported fitted trees on the selected held-out delivery in the online Worker. The real outcome is never a model input.</p>
           </div>
         </div>
       </div>
@@ -299,7 +298,7 @@
     </section>
   </main>
 
-  <footer><div class="container footer-layout"><div class="brand inverse"><span class="brand-mark"><i></i><i></i><i></i></span><span>ETA Reliability Lab</span></div><p>Built for the William & Mary AI Club Case-A-Thon 2026 · Local FastAPI prototype</p><a href="/docs" data-api-path="/docs" target="_blank" rel="noreferrer">Open API docs ↗</a></div></footer>
+  <footer><div class="container footer-layout"><div class="brand inverse"><span class="brand-mark"><i></i><i></i><i></i></span><span>ETA Reliability Lab</span></div><p>Built for the William & Mary AI Club Case-A-Thon 2026 · Cloudflare-hosted live demo</p><a href="#docs">Open documentation ↑</a></div></footer>
 
   <div class="modal" id="override-modal" aria-hidden="true"><div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="override-title"><button class="modal-close" data-close-modal aria-label="Close">×</button><span class="section-kicker">DISPATCHER CORRECTION</span><h3 id="override-title">Enter a safer ETA</h3><p>The original prediction remains in the audit log.</p><label>Corrected ETA in minutes<input id="override-value" type="number" min="1" max="360" step="1"></label><label>Reason for correction<textarea id="override-note" rows="3" placeholder="What evidence changed your decision?"></textarea></label><button class="button button-primary full" id="save-override">Save correction</button></div></div>
 

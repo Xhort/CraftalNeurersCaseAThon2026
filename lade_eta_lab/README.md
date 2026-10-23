@@ -1,6 +1,6 @@
 # LaDe ETA Reliability Lab
 
-This is the complete Case-A-Thon artifact for the prompt on unintentional data poisoning. It predicts delivery duration, isolates stale and low-quality data, compares a transparent countermeasure on the same future orders, and gives a dispatcher an evidence-based correction path. It runs locally with FastAPI and online at `antydata.com` through a Cloudflare Worker and Container.
+This is the complete Case-A-Thon artifact for the prompt on unintentional data poisoning. It predicts delivery duration, isolates stale and low-quality data, compares a transparent countermeasure on the same future orders, and gives a dispatcher an evidence-based correction path. It runs locally with FastAPI and online at `antydata.com` through a Cloudflare Worker.
 
 The website is intentionally written for a nontechnical audience. Technical details, machine-readable results, limitations, and governance records remain available in the Documentation section.
 
@@ -13,11 +13,11 @@ The website is intentionally written for a nontechnical audience. Technical deta
 | Website | Plain-language conclusion, three-step live AI prediction, full experiment controls, mechanism trace, dispatcher walkthrough, documentation tabs, and a 10-minute presentation mode |
 | Evidence package | Run-level and daily CSV files, data manifest, modification log, metric dictionary, governance plan, and AI-use disclosure |
 | Fallback demo | A 75-second captioned MP4 plus reproducible capture and build scripts |
-| Online deployment | Edge-hosted static site, containerized FastAPI/scikit-learn inference, and durable review decisions |
+| Online deployment | Edge-hosted site and API, live exported-tree inference, and durable review decisions |
 
 ## Run online
 
-The repository includes `wrangler.jsonc`, a Worker router, a production Dockerfile,
+The repository includes `wrangler.jsonc`, the Worker API, exported fitted trees,
 and a static build script. Cloudflare Workers Builds should use `npm run build`
 as the build command and `npx wrangler deploy` as the deploy command. See
 `CLOUDFLARE_DEPLOYMENT.md` for the one-time account settings and verification
@@ -83,13 +83,13 @@ The main metric is mean absolute error in minutes. The artifact also reports lar
 
 ## What the live AI demo actually does
 
-The website’s **Live AI prediction** section runs a real `HistGradientBoostingRegressor` through the local FastAPI service. The three buttons compare the same held-out delivery and fixed real outcome:
+The website’s **Live AI prediction** section evaluates trees exported from the real fitted `HistGradientBoostingRegressor`. Online requests run in Cloudflare Workers; local model development can use FastAPI. The three buttons compare the same held-out delivery and fixed real outcome:
 
 1. **Trusted pipeline:** the reference fitted model receives the untouched held-out inputs.
 2. **Full degraded pipeline:** a model fitted on the controlled unreliable-feed training condition receives that delivery’s corresponding degraded inputs.
 3. **Degraded pipeline + safeguard:** the reliability-aware fitted model applies weighted training, robust input backoff, and the human-review rule to the same degraded condition.
 
-Training is performed ahead of the presentation so the walkthrough is fast and repeatable. Every button still makes fresh server-side `.predict()` calls over the fixed evaluation batch and returns the selected delivery’s result. The batch context is important because safeguard preprocessing uses a stable evaluation-batch median. The outcome is withheld from both the case list and prediction responses; the browser requests it from a separate retrospective reveal endpoint only after showing the trusted and degraded predictions.
+Training is performed ahead of the presentation so the walkthrough is fast and repeatable. Every online button request freshly evaluates the exported fitted trees for the selected delivery. Safeguard preprocessing uses the same fixed evaluation-batch median registered by the Python experiment. The outcome is withheld from both the case list and prediction responses; the browser requests it from a separate retrospective reveal endpoint only after showing the trusted and degraded predictions.
 
 The low-quality scenario is an **end-to-end scenario**, not an attribution test: it bundles simulated corruption of duplicated training rows with controlled changes to selected evaluation inputs. The four selectable cases are disclosed teaching examples, including a counterexample. They do not replace the aggregate conclusion from 3,407 held-out deliveries and 24 matched runs.
 

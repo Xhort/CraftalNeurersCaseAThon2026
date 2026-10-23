@@ -31,7 +31,7 @@ The prediction request body is:
 }
 ```
 
-`scenario` must be `clean`, `poisoned`, or `safeguarded`. The endpoint loads the corresponding pre-fitted artifact and makes fresh `.predict()` calls over the fixed evaluation batch. It returns only the selected delivery’s output. This preserves the same batch context used by safeguard preprocessing in the measured experiment.
+`scenario` must be `clean`, `poisoned`, or `safeguarded`. In production, the endpoint evaluates the corresponding exported fitted trees for the selected held-out delivery. The safeguarded vector retains the same fixed-batch preprocessing context used by the measured Python experiment. Local FastAPI development loads the original joblib artifact and calls `.predict()`.
 
 The `poisoned` scenario is the full low-quality condition: the model was fitted on controlled unreliable training rows, and the held-out delivery receives the corresponding controlled degraded inputs. The `safeguarded` scenario adds the bundled reliability-aware training, input backoff, and review policy. Neither `/cases` nor `/predict` returns the real duration. `/outcome/{package_id}` is a separate retrospective reveal, and the target is never a model feature.
 
@@ -50,9 +50,9 @@ In production, the Cloudflare Worker stores these records in Durable Object stor
 
 | Method and path | Purpose |
 |---|---|
-| `POST /api/experiments/preview` | Run a labeled synthetic sensitivity preview in memory |
+| `POST /api/experiments/preview` | Run a labeled synthetic sensitivity preview in local FastAPI development |
 
-The preview endpoint does not overwrite measured results.
+The preview endpoint does not overwrite measured results. It returns `501` in the public Worker because on-demand model retraining is intentionally kept in the local Python research environment.
 
 ## Documentation and downloads
 

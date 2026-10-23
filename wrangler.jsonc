@@ -21,27 +21,16 @@
       "/api/*"
     ]
   },
-  "containers": [
-    {
-      "class_name": "Backend",
-      "scheduling_policy": "durable_object",
-      "images": {
-        "base": {
-          "dockerfile": "./Dockerfile"
-        }
-      }
-    }
-  ],
   "durable_objects": {
     "bindings": [
       {
-        "name": "BACKEND",
-        "class_name": "Backend"
+        "name": "DECISIONS",
+        "class_name": "DecisionStore"
       }
     ]
   },
   "exports": {
-    "Backend": {
+    "DecisionStore": {
       "type": "durable-object",
       "storage": "sqlite"
     }
