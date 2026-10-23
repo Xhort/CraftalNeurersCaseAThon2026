@@ -12,6 +12,9 @@ def test_health_and_overview_use_measured_results():
     website = client.get("/")
     assert website.status_code == 200
     assert './lade_eta_lab/static/styles.css' in website.text
+    assert './lade_eta_lab/static/antydata-logo.png' in website.text
+    assert "ETA Reliability Lab" not in website.text
+    assert client.get("/lade_eta_lab/static/antydata-logo.png").status_code == 200
     assert "More data made delivery ETAs" in website.text
     assert "Do not deploy yet" in website.text
     assert 'id="roadmap-frame"' in website.text
