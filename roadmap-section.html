@@ -1,0 +1,703 @@
+<!-- =============================================================================
+  IMPACT ROADMAP SECTION — drop-in replacement for the "10-MINUTE PRESENTATION"
+  block. Plain HTML/CSS/JS, no build step, no libraries. All styles are scoped
+  under #roadmap and all JS lives in one closure, so it won't clash with the
+  rest of the site.
+
+  Needs, in the same folder (or edit the two paths marked PATH below):
+    roadmap-data.js   — the numbers (single source of truth)
+    user-report.html  — the separate report for users
+============================================================================= -->
+<section id="roadmap" class="rm" aria-labelledby="rm-title">
+  <div class="rm-wrap">
+    <p class="rm-eyebrow">05 · IMPACT ROADMAP</p>
+    <h2 id="rm-title" class="rm-h2">What our corrected data means for the company</h2>
+    <p class="rm-lede">One overview briefing plus one video per experiment scenario, all generated live from the experiment data on this site: what the
+      unreliable feed cost us, what the safeguard won back, and the gated path from here to a
+      rollout. Every number is read from <code>/api/downloads/timeline.csv</code>; planning assumptions live in <code>roadmap-data.js</code>.</p>
+
+    <div class="rm-progs" id="rm-progs" role="tablist" aria-label="Choose a video"></div>
+    <p class="rm-data" id="rm-data">Loading experiment data…</p>
+    <div class="rm-player">
+      <canvas id="rm-canvas" width="1280" height="720"
+              aria-label="Animated impact roadmap briefing"></canvas>
+      <div class="rm-controls">
+        <button type="button" class="rm-btn rm-play" id="rm-play" aria-label="Play">▶</button>
+        <button type="button" class="rm-btn" id="rm-restart" aria-label="Restart">↺</button>
+        <input type="range" id="rm-seek" min="0" max="1000" value="0" aria-label="Seek">
+        <span class="rm-time" id="rm-time">0:00 / 0:00</span>
+        <label class="rm-narrate"><input type="checkbox" id="rm-narrate"> 🔊 Narrate</label>
+      </div>
+      <div class="rm-chips" id="rm-chips" role="tablist" aria-label="Jump to scene"></div>
+      <p class="rm-caption" id="rm-caption" aria-live="polite"></p>
+    </div>
+
+    <div class="rm-actions">
+      <button type="button" class="rm-cta" id="rm-record">⬇ Record this video</button>
+      <button type="button" class="rm-cta rm-ghost" id="rm-record-all">⬇ Record all videos</button>
+      <a class="rm-cta rm-ghost" id="rm-mp4" href="#" download>⬇ Pre-rendered MP4</a>
+      <a class="rm-cta rm-ghost" id="rm-report" href="#" target="_blank" rel="noopener">📄 Open user report</a>
+      <label class="rm-cta rm-ghost rm-file">📂 Load timeline.csv<input type="file" id="rm-file" accept=".csv,text/csv"></label>
+    </div>
+    <p class="rm-status" id="rm-status" role="status"></p>
+
+    <h3 class="rm-h3">The roadmap</h3>
+    <ol class="rm-phases" id="rm-phases"></ol>
+    <p class="rm-note" id="rm-note"></p>
+  </div>
+</section>
+
+<style>
+#roadmap{--rm-bg:#0b1220;--rm-panel:#131c2e;--rm-line:#24314a;--rm-text:#e8edf5;--rm-dim:#93a1b8;
+  --rm-accent:#2dd4bf;--rm-amber:#f5a524;--rm-red:#f87171;--rm-green:#34d399;
+  background:var(--rm-bg);color:var(--rm-text);padding:72px 20px;
+  font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;}
+#roadmap *{box-sizing:border-box}
+#roadmap .rm-wrap{max-width:1100px;margin:0 auto}
+#roadmap .rm-eyebrow{letter-spacing:.14em;font-size:.78rem;color:var(--rm-accent);margin:0 0 8px;font-weight:600}
+#roadmap .rm-h2{font-size:clamp(1.6rem,3.4vw,2.4rem);line-height:1.15;margin:0 0 12px}
+#roadmap .rm-h3{font-size:1.25rem;margin:40px 0 14px}
+#roadmap .rm-lede{color:var(--rm-dim);max-width:760px;margin:0 0 24px;line-height:1.55}
+#roadmap code{background:var(--rm-panel);padding:1px 6px;border-radius:4px;font-size:.9em}
+#roadmap .rm-progs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px}
+#roadmap .rm-prog{background:var(--rm-panel);color:var(--rm-text);border:1px solid var(--rm-line);border-radius:10px;
+  padding:8px 14px;font-weight:600;font-size:.9rem;cursor:pointer}
+#roadmap .rm-prog[aria-selected="true"]{border-color:var(--rm-accent);box-shadow:inset 0 -3px 0 var(--rm-accent)}
+#roadmap .rm-data{font-size:.8rem;color:var(--rm-dim);margin:0 0 12px}
+#roadmap .rm-data[data-state="missing"]{color:var(--rm-amber)}
+#roadmap .rm-file input{position:absolute;width:1px;height:1px;opacity:0}
+#roadmap .rm-file{position:relative}
+#roadmap .rm-player{background:var(--rm-panel);border:1px solid var(--rm-line);border-radius:14px;overflow:hidden}
+#roadmap canvas{display:block;width:100%;height:auto;aspect-ratio:16/9;background:#0b1220}
+#roadmap .rm-controls{display:flex;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid var(--rm-line)}
+#roadmap .rm-btn{background:transparent;border:1px solid var(--rm-line);color:var(--rm-text);
+  width:38px;height:38px;border-radius:999px;cursor:pointer;font-size:1rem}
+#roadmap .rm-btn:hover,#roadmap .rm-btn:focus-visible{border-color:var(--rm-accent);outline:none}
+#roadmap .rm-play{background:var(--rm-accent);color:#05201c;border-color:var(--rm-accent);font-weight:700}
+#roadmap #rm-seek{flex:1;accent-color:var(--rm-accent);min-width:60px}
+#roadmap .rm-time{font-variant-numeric:tabular-nums;color:var(--rm-dim);font-size:.85rem;white-space:nowrap}
+#roadmap .rm-narrate{font-size:.85rem;color:var(--rm-dim);white-space:nowrap;cursor:pointer}
+#roadmap .rm-chips{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 12px}
+#roadmap .rm-chip{background:transparent;color:var(--rm-dim);border:1px solid var(--rm-line);border-radius:999px;
+  padding:4px 10px;font-size:.78rem;cursor:pointer}
+#roadmap .rm-chip[aria-selected="true"]{color:#05201c;background:var(--rm-accent);border-color:var(--rm-accent)}
+#roadmap .rm-caption{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+#roadmap .rm-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+#roadmap .rm-cta{display:inline-flex;align-items:center;gap:6px;padding:10px 16px;border-radius:10px;
+  background:var(--rm-accent);color:#05201c;border:1px solid var(--rm-accent);font-weight:600;
+  text-decoration:none;cursor:pointer;font-size:.92rem}
+#roadmap .rm-cta.rm-ghost{background:transparent;color:var(--rm-text);border-color:var(--rm-line)}
+#roadmap .rm-cta:hover{filter:brightness(1.08)}
+#roadmap .rm-cta[disabled]{opacity:.55;cursor:wait}
+#roadmap .rm-status{color:var(--rm-dim);font-size:.85rem;min-height:1.2em;margin:8px 0 0}
+#roadmap .rm-phases{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+#roadmap .rm-phase{background:var(--rm-panel);border:1px solid var(--rm-line);border-radius:12px;padding:16px;
+  border-top:3px solid var(--rm-accent)}
+#roadmap .rm-phase:first-child{border-top-color:var(--rm-amber)}
+#roadmap .rm-phase .rm-tag{font-size:.75rem;color:var(--rm-accent);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+#roadmap .rm-phase:first-child .rm-tag{color:var(--rm-amber)}
+#roadmap .rm-phase h4{margin:6px 0 8px;font-size:1.02rem}
+#roadmap .rm-phase p{margin:0 0 10px;color:var(--rm-dim);font-size:.88rem;line-height:1.5}
+#roadmap .rm-phase .rm-owner{font-size:.78rem;color:var(--rm-text);opacity:.8}
+#roadmap .rm-note{color:var(--rm-dim);font-size:.8rem;margin-top:16px;line-height:1.5}
+@media (max-width:860px){#roadmap .rm-phases{grid-template-columns:1fr 1fr}}
+@media (max-width:520px){#roadmap{padding:48px 16px}#roadmap .rm-phases{grid-template-columns:1fr}
+  #roadmap .rm-narrate{display:none}}
+</style>
+
+<script src="roadmap-data.js"></script><!-- PATH -->
+<script>
+(function () {
+  "use strict";
+  const D = window.ROADMAP_DATA; let X = window.ROADMAP_DERIVED;
+  if (!D || !X) { console.error("roadmap-data.js not loaded"); return; }
+  const R = D.results, A = D.assumptions, G = D.gates;
+  const W = 1280, H = 720;
+  const C = { bg: "#0b1220", panel: "#131c2e", line: "#24314a", text: "#e8edf5", dim: "#93a1b8",
+              teal: "#2dd4bf", amber: "#f5a524", red: "#f87171", green: "#34d399" };
+  const FONT = 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+
+  /* ---------- drawing helpers ---------- */
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const ease = (t) => 1 - Math.pow(1 - clamp(t, 0, 1), 3);
+  const prog = (t, a, b) => ease((t - a) / (b - a));
+  const f = (n, d = 1) => Number(n).toFixed(d);
+
+  let FADE = 1, CTX = null;                       // scene fade multiplier
+  function setA(a) { CTX.globalAlpha = FADE * a; }
+  function setFont(ctx, size, weight) { ctx.font = `${weight || 500} ${size}px ${FONT}`; }
+  function wrap(ctx, s, maxW) {
+    const words = String(s).split(" "), lines = []; let cur = "";
+    for (const w of words) {
+      const t = cur ? cur + " " + w : w;
+      if (ctx.measureText(t).width > maxW && cur) { lines.push(cur); cur = w; } else cur = t;
+    }
+    if (cur) lines.push(cur);
+    return lines;
+  }
+  function txt(ctx, s, x, y, size, o) {
+    o = o || {};
+    setFont(ctx, size, o.w);
+    ctx.fillStyle = o.color || C.text;
+    ctx.textAlign = o.align || "left";
+    ctx.textBaseline = "alphabetic";
+    const a0 = ctx.globalAlpha; ctx.globalAlpha = FADE * (o.alpha == null ? 1 : o.alpha);
+    const lines = o.maxW ? wrap(ctx, s, o.maxW) : [String(s)];
+    const lh = size * (o.lh || 1.3);
+    lines.forEach((ln, i) => ctx.fillText(ln, x, y + i * lh));
+    ctx.globalAlpha = a0;
+    return lines.length * lh;
+  }
+  function rr(ctx, x, y, w, h, r, fill, stroke) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+    if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+    if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 2; ctx.stroke(); }
+  }
+  function headline(ctx, eyebrow, title, t) {
+    txt(ctx, eyebrow, 80, 112, 18, { w: 600, color: C.teal, alpha: prog(t, 0, 0.6) });
+    txt(ctx, title, 80, 162, 42, { w: 700, alpha: prog(t, 0.1, 0.8), maxW: 1100 });
+  }
+
+  /* =========================================================================
+     PROGRAM 1 — OVERVIEW (company-level roadmap)
+  ========================================================================= */
+  function buildOverview() {
+    X = window.ROADMAP_DERIVED;
+    const parts = [], worseParts = [];
+    if (X.hasStale) { parts.push(`old data ${f(R.staleOffMin)}→${f(R.staleOnMin)} min`); if (R.staleOnMin > R.staleOffMin) worseParts.push("old-data"); }
+    if (X.hasCombined) { parts.push(`combined ${f(R.combinedOffMin)}→${f(R.combinedOnMin)} min`); if (R.combinedOnMin > R.combinedOffMin) worseParts.push("combined"); }
+    const known = parts.length > 0;
+    const worseText = known ? parts.join(" · ") : "made the old-data and combined tests worse";
+    const worseHead = known ? (worseParts.length ? "Worse" : "Not worse") : "Worse";
+    const worseColor = known && !worseParts.length ? C.green : C.red;
+      return [
+      { label: "Intro", dur: 5,
+        cap: "Here's what our corrected data would mean for the company — and why we are not deploying it yet.",
+        draw(ctx, t) {
+          txt(ctx, `IMPACT ROADMAP · ${D.team.toUpperCase()}`, 80, 250, 20, { w: 600, color: C.teal, alpha: prog(t, 0, .8) });
+          txt(ctx, "What our corrected data", 80, 330, 64, { w: 800, alpha: prog(t, .2, 1.1) });
+          txt(ctx, "means for the company", 80, 410, 64, { w: 800, alpha: prog(t, .4, 1.3) });
+          ctx.fillStyle = C.teal; ctx.fillRect(80, 448, 520 * prog(t, .8, 2), 5);
+          txt(ctx, D.dataset, 80, 500, 22, { color: C.dim, alpha: prog(t, 1.2, 2) });
+        } },
+      { label: "The problem", dur: 9,
+        cap: `A fast but unreliable feed grew to ${R.noisyFeedSharePct}% of the evidence. Average ETA misses rose from ${f(R.referenceMin)} to ${f(R.noisyMin)} minutes.`,
+        draw(ctx, t) {
+          headline(ctx, "THE PROBLEM", "More data made delivery ETAs worse", t);
+          const p = prog(t, .8, 3), cx = 300, cy = 380, rad = 120;
+          ctx.lineWidth = 34; ctx.lineCap = "butt";
+          ctx.strokeStyle = C.line; ctx.beginPath(); ctx.arc(cx, cy, rad, 0, Math.PI * 2); ctx.stroke();
+          ctx.strokeStyle = C.amber; ctx.beginPath();
+          ctx.arc(cx, cy, rad, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (R.noisyFeedSharePct / 100) * p); ctx.stroke();
+          txt(ctx, `${Math.round(R.noisyFeedSharePct * p)}%`, cx, cy + 18, 56, { w: 800, align: "center" });
+          txt(ctx, "of the evidence came from", cx, cy + rad + 56, 20, { color: C.dim, align: "center" });
+          txt(ctx, "a fast, unreliable feed", cx, cy + rad + 84, 20, { color: C.dim, align: "center" });
+          const q = prog(t, 3, 5.5);
+          txt(ctx, "Average ETA miss", 640, 290, 22, { color: C.dim, alpha: q });
+          txt(ctx, `${f(R.referenceMin)} min`, 640, 370, 60, { w: 800, alpha: q });
+          txt(ctx, "trusted data only", 640, 404, 18, { color: C.dim, alpha: q });
+          const q2 = prog(t, 4.5, 6.5);
+          txt(ctx, "→", 920, 370, 52, { color: C.dim, alpha: q2 });
+          const v = R.referenceMin + (R.noisyMin - R.referenceMin) * q2;
+          txt(ctx, `${f(v)} min`, 990, 370, 60, { w: 800, color: C.red, alpha: q2 });
+          txt(ctx, "with the noisy feed", 990, 404, 18, { color: C.dim, alpha: q2 });
+          const q3 = prog(t, 6.2, 7.2);
+          setA(q3); rr(ctx, 640, 450, 300, 64, 32, "rgba(248,113,113,.15)", C.red); setA(1);
+          txt(ctx, `+${f(X.loss)} min per delivery`, 790, 492, 24, { w: 700, color: C.red, align: "center", alpha: q3 });
+        } },
+      { label: "Safeguard result", dur: 9,
+        cap: `Our safeguard won back only ${f(X.recovered)} of those ${f(X.loss)} minutes — ${X.recoveredPct}%. ${R.sentToDispatcherPct}% of ETAs went to a dispatcher, and ${known ? "on the other tests: " + worseText : "it " + worseText}.`,
+        draw(ctx, t) {
+          headline(ctx, "WHAT THE SAFEGUARD DID", `It recovered ${f(X.recovered)} of ${f(X.loss)} minutes — not enough`, t);
+          const x0 = 80, y0 = 280, bw = 1120, bh = 56, p = prog(t, .8, 2.8);
+          rr(ctx, x0, y0, bw, bh, 12, "rgba(248,113,113,.18)", C.red);
+          rr(ctx, x0, y0, Math.max(24, bw * (X.recoveredPct / 100) * p), bh, 12, C.green);
+          txt(ctx, `${Math.round(X.recoveredPct * p)}% recovered`, x0 + 16, y0 + 37, 22, { w: 700, color: "#05201c" });
+          txt(ctx, `loss caused by the noisy feed: ${f(X.loss)} min`, x0 + bw - 16, y0 + 37, 20, { color: C.red, align: "right" });
+          const gx = x0 + bw * (G.recoverPctOfLoss / 100), g = prog(t, 2.6, 3.4);
+          setA(g); ctx.setLineDash([8, 6]); ctx.strokeStyle = C.amber; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.moveTo(gx, y0 - 22); ctx.lineTo(gx, y0 + bh + 22); ctx.stroke(); ctx.setLineDash([]);
+          setA(1);
+          txt(ctx, `pilot gate ≥ ${G.recoverPctOfLoss}%`, gx, y0 - 32, 18, { w: 600, color: C.amber, align: "center", alpha: g });
+          const tiles = [
+            [`${R.sentToDispatcherPct}%`, "of ETAs sent to a dispatcher", C.teal],
+            [worseHead, known ? worseText : "on the old-data and combined tests", worseColor],
+            [`±${f(R.repeatRunSpread)} min`, "spread across repeat runs — result is stable", C.text],
+          ];
+          tiles.forEach((tl, i) => {
+            const a = prog(t, 3.5 + i * 1.2, 4.5 + i * 1.2), x = 80 + i * 380, y = 420;
+            setA(a); rr(ctx, x, y, 360, 170, 14, C.panel, C.line); setA(1);
+            txt(ctx, tl[0], x + 24, y + 70, 44, { w: 800, color: tl[2], alpha: a });
+            txt(ctx, tl[1], x + 24, y + 110, 19, { color: C.dim, alpha: a, maxW: 310 });
+          });
+        } },
+      { label: "Decision", dur: 5,
+        cap: "So our recommendation is clear: do not deploy yet. The data problem is real and measurable; the fix is not ready.",
+        draw(ctx, t) {
+          const s = 0.85 + 0.15 * prog(t, 0, .6), a = prog(t, 0, .5);
+          ctx.save(); ctx.translate(W / 2, 330); ctx.scale(s, s); ctx.rotate(-0.03);
+          setA(a); rr(ctx, -470, -85, 940, 170, 18, "rgba(245,165,36,.12)", C.amber); setA(1);
+          txt(ctx, "DO NOT DEPLOY YET", 0, 26, 72, { w: 900, color: C.amber, align: "center", alpha: a });
+          ctx.restore();
+          txt(ctx, "The data problem is real and measurable. The fix isn't ready — so we gate it.",
+              W / 2, 500, 26, { color: C.dim, align: "center", alpha: prog(t, 1, 2) });
+        } },
+      { label: "Roadmap", dur: 15,
+        cap: "Instead, a four-step roadmap: hold now, fix the safeguard in four weeks, shadow-pilot one region, then roll out only through gates.",
+        draw(ctx, t) {
+          headline(ctx, "THE ROADMAP", "Four gated steps from here to rollout", t);
+          const n = D.phases.length, cw = 262, step = (W - 80 - cw) / Math.max(n - 1, 1);
+          const y = 250, x0 = 40 + cw / 2, x1 = 40 + cw / 2 + step * (n - 1), p = prog(t, .6, 11);
+          ctx.strokeStyle = C.line; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke();
+          ctx.strokeStyle = C.teal; ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x0 + (x1 - x0) * p, y); ctx.stroke();
+          D.phases.forEach((ph, i) => {
+            const cx = x0 + step * i, a = prog(t, 1 + i * 2.8, 2 + i * 2.8);
+            const col = i === 0 ? C.amber : C.teal;
+            setA(Math.max(.25, a));
+            ctx.fillStyle = a > 0.05 ? col : C.line; ctx.beginPath(); ctx.arc(cx, y, 16, 0, Math.PI * 2); ctx.fill();
+            setA(1);
+            const cx0 = cx - cw / 2, cy = y + 40 + (1 - a) * 20;
+            setA(a); rr(ctx, cx0, cy, cw, 320, 14, C.panel, C.line);
+            ctx.fillStyle = col; ctx.fillRect(cx0, cy, cw, 4); setA(1);
+            txt(ctx, ph.tag.toUpperCase(), cx0 + 18, cy + 36, 15, { w: 700, color: col, alpha: a });
+            const th = txt(ctx, ph.title, cx0 + 18, cy + 68, 22, { w: 700, alpha: a, maxW: cw - 36, lh: 1.2 });
+            txt(ctx, ph.body, cx0 + 18, cy + 68 + th + 6, 15, { color: C.dim, alpha: a, maxW: cw - 36, lh: 1.4 });
+            txt(ctx, "Owner: " + ph.owner, cx0 + 18, cy + 284, 13, { w: 600, color: C.text, alpha: a * .85, maxW: cw - 36 });
+          });
+        } },
+      { label: "Company impact", dur: 13,
+        cap: `If the safeguard passes its gate in one region at ${X.fmt(A.dailyDeliveries)} deliveries a day, ETAs carry about ${X.fmt(X.errorAvoidedAtGateMin)} fewer minutes of error daily, for roughly ${X.reviewMinPerDay} minutes of dispatcher review.`,
+        draw(ctx, t) {
+          headline(ctx, "IF THE GATES PASS", `One region, ${X.fmt(A.dailyDeliveries)} deliveries a day`, t);
+          const tiles = [
+            ["CUSTOMERS", `${X.fmt(X.errorAvoidedAtGateMin)} min/day`,
+             `less total ETA error at the ${G.recoverPctOfLoss}% gate (${X.fmt(X.errorAvoidedTodayMin)} today). The noisy feed adds ${X.fmt(X.errorAddedByFeedMin)} min/day.`, C.green],
+            ["DISPATCHERS", `≈ ${X.reviewMinPerDay} min/day`,
+             `${X.fmt(X.reviewsPerDay)} reviews/day (${R.sentToDispatcherPct}% of deliveries) at ~${A.reviewSeconds} s each. ${R.handledWithoutReviewPct}% need no review.`, C.teal],
+            ["DATA TEAM", "Weekly audit",
+             "Noisy-feed audit + 8-condition re-run every week. Every escalation lands with the data-quality owner.", C.amber],
+          ];
+          tiles.forEach((tl, i) => {
+            const a = prog(t, 1 + i * 1.6, 2.2 + i * 1.6), x = 80 + i * 380, y = 250 + (1 - a) * 24;
+            setA(a); rr(ctx, x, y, 360, 300, 16, C.panel, C.line);
+            ctx.fillStyle = tl[3]; ctx.fillRect(x, y, 360, 5); setA(1);
+            txt(ctx, tl[0], x + 26, y + 46, 16, { w: 700, color: tl[3], alpha: a });
+            txt(ctx, tl[1], x + 26, y + 108, 38, { w: 800, alpha: a, maxW: 320 });
+            txt(ctx, tl[2], x + 26, y + 160, 18, { color: C.dim, alpha: a, maxW: 310, lh: 1.45 });
+          });
+          txt(ctx, `Planning assumptions: ${X.fmt(A.dailyDeliveries)} deliveries/day, ${A.reviewSeconds} s per review — replace with measured pilot values.`,
+              80, 610, 16, { color: C.dim, alpha: prog(t, 6, 7) });
+        } },
+      { label: "Stop conditions", dur: 8,
+        cap: "And we stop immediately if any of these happen.",
+        draw(ctx, t) {
+          headline(ctx, "STOP CONDITIONS", "We pause the rollout if…", t);
+          D.stopConditions.forEach((s, i) => {
+            const a = prog(t, .8 + i * .9, 1.6 + i * .9), y = 250 + i * 70;
+            setA(a); rr(ctx, 80, y, 1120, 56, 12, C.panel, C.line); setA(1);
+            txt(ctx, "■", 106, y + 37, 20, { color: C.red, alpha: a });
+            txt(ctx, s, 146, y + 37, 22, { alpha: a });
+          });
+        } },
+      { label: "The ask", dur: 7,
+        cap: `Today's ask: approve Phase 1 — four weeks to fix the safeguard. Next checkpoint: ${D.nextCheckpoint}.`,
+        draw(ctx, t) {
+          txt(ctx, "THE ASK TODAY", 80, 230, 20, { w: 600, color: C.teal, alpha: prog(t, 0, .6) });
+          txt(ctx, "Approve Phase 1:", 80, 310, 58, { w: 800, alpha: prog(t, .2, 1) });
+          txt(ctx, "four weeks to fix the safeguard.", 80, 380, 58, { w: 800, color: C.teal, alpha: prog(t, .5, 1.3) });
+          txt(ctx, `Next checkpoint: ${D.nextCheckpoint}`, 80, 450, 26, { color: C.dim, alpha: prog(t, 1.2, 2) });
+          let x = 80;
+          D.roles.forEach((r, i) => {
+            setFont(ctx, 17, 600); const w = ctx.measureText(r.role).width + 36, a = prog(t, 2 + i * .3, 2.6 + i * .3);
+            setA(a); rr(ctx, x, 510, w, 42, 21, null, C.line); setA(1);
+            txt(ctx, r.role, x + w / 2, 537, 17, { w: 600, align: "center", alpha: a }); x += w + 12;
+          });
+        } },
+    ];
+  }
+
+  /* =========================================================================
+     PROGRAMS 2..n — ONE VIDEO PER SCENARIO, generated from timeline.csv
+  ========================================================================= */
+  const titleCase = (s) => String(s).replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
+  const pct = (v) => `${Math.round(v * 100)}%`;
+  const sgn = (v, d = 1) => `${v >= 0 ? "+" : "−"}${Math.abs(v).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d })}`;
+  const TONE = { good: C.green, warn: C.amber, bad: C.red, neutral: C.teal };
+
+  function verdict(cond, off, on, ref) {
+    if (!on) return { tone: "neutral", head: "No safeguard run for this scenario",
+      body: "The experiment file has no mitigated runs for this condition.", action: "Add the safeguard run to the experiment." };
+    const gap = off.mae - ref.mae, delta = on.mae - off.mae, defPct = on.deferred * 100;
+    const defNote = defPct > G.maxSentToDispatcherPct ? ` It also sends ${defPct.toFixed(1)}% of deliveries to dispatchers (gate ≤ ${G.maxSentToDispatcherPct}%).` : "";
+    if (cond === "reference") {
+      if (Math.abs(delta) < 0.5) return { tone: defNote ? "warn" : "good", head: "Safeguard stays out of the way on clean data",
+        body: `On trusted data the safeguard changes the average miss by ${sgn(delta)} min, so normal days aren't taxed.${defNote}`,
+        action: "Keep this behaviour in every redesign." };
+      return delta > 0
+        ? { tone: "warn", head: `Safeguard costs ${f(delta)} min even on clean data`, body: `On trusted data, the safeguard makes ETAs worse.${defNote}`, action: "Fix in Phase 1: the safeguard must be neutral on clean days." }
+        : { tone: "good", head: `Safeguard helps even on clean data (${sgn(delta)} min)`, body: `Clean-data accuracy improves.${defNote}`, action: "Keep, and confirm in the shadow pilot." };
+    }
+    if (on.deferred >= 0.9) return { tone: "bad", head: `${Math.round(defPct)}% of deliveries handed to dispatchers`,
+      body: `The safeguard doesn't fix ETAs here; it moves the work to people. Accuracy change: ${sgn(delta)} min.`,
+      action: "Redesign this guard in Phase 1: hold the last trusted area pattern instead of deferring every ETA." };
+    if (delta > 0.05) return { tone: "bad", head: "Safeguard makes this scenario worse",
+      body: `${sgn(delta)} min per delivery compared with no safeguard.${defNote}`, action: "Blocks deployment. Fix in Phase 1 and re-test." };
+    if (gap > 0.1) {
+      const rec = Math.round((100 * -delta) / gap), pass = rec >= G.recoverPctOfLoss && defPct <= G.maxSentToDispatcherPct;
+      return pass
+        ? { tone: "good", head: `Recovers ${rec}% of the loss`, body: `The safeguard wins back ${f(-delta)} of ${f(gap)} min lost to this problem.${defNote}`, action: "Candidate for the shadow pilot." }
+        : { tone: "warn", head: `Recovers only ${Math.max(rec, 0)}% of the loss`, body: `The safeguard wins back ${f(Math.max(-delta, 0))} of ${f(gap)} min (gate: ${G.recoverPctOfLoss}%).${defNote}`, action: "Improve in Phase 1 before any pilot." };
+    }
+    return { tone: "neutral", head: "This problem barely moved accuracy",
+      body: `Only ${sgn(gap)} min versus trusted data; safeguard change ${sgn(delta)} min.${defNote}`, action: "Keep monitoring; not the priority." };
+  }
+
+  function lineChart(ctx, x, y, w, h, dates, series, p, alpha) {
+    const vals = [];
+    series.forEach((s) => s.values.forEach((v) => Number.isFinite(v) && vals.push(v)));
+    if (!vals.length) return;
+    let lo = Math.min(...vals), hi = Math.max(...vals); const pad = (hi - lo) * 0.12 || 1; lo -= pad; hi += pad;
+    const step = Math.pow(10, Math.floor(Math.log10((hi - lo) / 4))) * ([1, 2, 5].find((m) => (hi - lo) / (Math.pow(10, Math.floor(Math.log10((hi - lo) / 4))) * m) <= 5) || 10);
+    const Y = (v) => y + h - ((v - lo) / (hi - lo)) * h, Xp = (i) => x + (dates.length > 1 ? (i / (dates.length - 1)) * w : w / 2);
+    ctx.lineWidth = 1;
+    for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) {
+      setA(alpha * 0.6); ctx.strokeStyle = C.line; ctx.beginPath(); ctx.moveTo(x, Y(v)); ctx.lineTo(x + w, Y(v)); ctx.stroke();
+      txt(ctx, `${Math.round(v)}`, x - 12, Y(v) + 5, 14, { color: C.dim, align: "right", alpha });
+    }
+    setA(1);
+    [0, Math.floor((dates.length - 1) / 2), dates.length - 1].forEach((i, k) =>
+      txt(ctx, dates[i] || "", Xp(i), y + h + 26, 14, { color: C.dim, align: ["left", "center", "right"][k], alpha }));
+    ctx.save(); ctx.beginPath(); ctx.rect(x - 4, y - 20, (w + 8) * p, h + 40); ctx.clip();
+    series.forEach((s) => {
+      setA(alpha); ctx.strokeStyle = s.color; ctx.lineWidth = s.width || 3; ctx.setLineDash(s.dash || []);
+      ctx.beginPath(); let started = false;
+      s.values.forEach((v, i) => { if (!Number.isFinite(v)) return; started ? ctx.lineTo(Xp(i), Y(v)) : ctx.moveTo(Xp(i), Y(v)); started = true; });
+      ctx.stroke(); ctx.setLineDash([]);
+    });
+    ctx.restore(); setA(1);
+  }
+
+  function buildScenario(cond, TL, k, n) {
+    const M = window.ROADMAP_CONDITIONS[cond] || { name: titleCase(cond), tag: titleCase(cond), what: "A degradation scenario from the experiment." };
+    const off = TL.get(cond, false), on = TL.get(cond, true), ref = TL.get("reference", false) || off;
+    if (!off) return null;
+    const isRef = cond === "reference", V = verdict(cond, off, on, ref), tone = TONE[V.tone];
+    const per = A.dailyDeliveries, gap = off.mae - ref.mae;
+    const extraOff = Math.round(gap * per), extraOn = on ? Math.round((on.mae - ref.mae) * per) : null;
+    const reviews = on ? Math.round(on.deferred * per) : 0, reviewMin = Math.round((reviews * A.reviewSeconds) / 60);
+    const bigMiss = Math.round((on || off).over15 * per);
+    const dates = ref.dates;
+    const align = (g) => g ? dates.map((d) => { const i = g.dates.indexOf(d); return i < 0 ? NaN : g.daily[i]; }) : [];
+    const series = isRef
+      ? [{ values: dates.map(() => off.baselineMae), color: C.amber, dash: [4, 6], width: 2, label: "Simple baseline (no AI)" },
+         { values: align(off), color: C.teal, label: "Our AI, no safeguard" },
+         ...(on ? [{ values: align(on), color: C.green, dash: [10, 6], label: "With safeguard" }] : [])]
+      : [{ values: align(ref), color: "#7d8aa3", dash: [8, 6], width: 2, label: "Trusted data" },
+         { values: align(off), color: C.red, label: `${M.name}, no safeguard` },
+         ...(on ? [{ values: align(on), color: C.green, label: "With safeguard" }] : [])];
+    const scenes = [
+      { label: "Scenario", dur: 5,
+        cap: `Scenario: ${M.name}. ${M.what}`,
+        draw(ctx, t) {
+          txt(ctx, `SCENARIO ${k} OF ${n} · ${M.tag.toUpperCase()}`, 80, 240, 20, { w: 600, color: C.teal, alpha: prog(t, 0, .8) });
+          txt(ctx, M.name, 80, 330, 76, { w: 800, alpha: prog(t, .2, 1.1) });
+          ctx.fillStyle = C.teal; setA(1); ctx.fillRect(80, 368, 420 * prog(t, .7, 1.8), 5);
+          txt(ctx, M.what, 80, 430, 26, { color: C.dim, alpha: prog(t, 1, 2), maxW: 1050 });
+          txt(ctx, `${D.dataset} · ${off.seeds} repeat run${off.seeds > 1 ? "s" : ""} · ${dates.length} evaluation days`, 80, 540, 18, { color: C.dim, alpha: prog(t, 1.6, 2.4) });
+        } },
+      { label: "Data health", dur: 8,
+        cap: isRef ? "On trusted data the evidence is fresh, and none of it comes from the noisy feed."
+                   : `In this scenario, area history is ${f(off.dataAge)} days old on average, ${pct(off.lqShare)} of the evidence comes from the noisy feed, and source reliability is ${pct(off.reliability)}.`,
+        draw(ctx, t) {
+          headline(ctx, "WHAT HAPPENED TO THE DATA", isRef ? "Clean, current evidence" : "The evidence the model learned from", t);
+          const tiles = [
+            ["Area history age", `${f(off.dataAge * prog(t, 1, 3))} days`, Math.min(off.dataAge / 14, 1), off.dataAge > 2 ? C.amber : C.green, "0 = refreshed daily"],
+            ["Noisy-feed share", pct(off.lqShare * prog(t, 1.6, 3.6)), off.lqShare, off.lqShare >= .5 ? C.red : off.lqShare > 0 ? C.amber : C.green, "of the evidence"],
+            ["Source reliability", pct(off.reliability * prog(t, 2.2, 4.2)), off.reliability, off.reliability < .6 ? C.red : off.reliability < .9 ? C.amber : C.green, "1 = fully trusted"],
+          ];
+          tiles.forEach((tl, i) => {
+            const a = prog(t, .6 + i * .6, 1.4 + i * .6), x = 80 + i * 380, y = 250;
+            setA(a); rr(ctx, x, y, 360, 260, 16, C.panel, C.line); setA(1);
+            txt(ctx, tl[0].toUpperCase(), x + 26, y + 46, 16, { w: 700, color: C.dim, alpha: a });
+            txt(ctx, tl[1], x + 26, y + 120, 52, { w: 800, color: tl[3], alpha: a });
+            setA(a); rr(ctx, x + 26, y + 160, 308, 14, 7, C.line); rr(ctx, x + 26, y + 160, Math.max(14, 308 * clamp(tl[2], 0, 1) * prog(t, 1 + i * .6, 3.5)), 14, 7, tl[3]); setA(1);
+            txt(ctx, tl[4], x + 26, y + 216, 16, { color: C.dim, alpha: a });
+          });
+        } },
+      { label: "Accuracy over time", dur: 12,
+        cap: isRef ? `On trusted data our AI misses by ${f(off.mae)} minutes on average, against ${f(off.baselineMae)} for a simple no-AI baseline.`
+                   : `Day by day, the average ETA miss with ${M.name.toLowerCase()} is ${f(off.mae)} minutes without the safeguard${on ? ` and ${f(on.mae)} with it` : ""}, against ${f(ref.mae)} on trusted data.`,
+        draw(ctx, t) {
+          headline(ctx, "ACCURACY, DAY BY DAY", "Average ETA miss (minutes) on future deliveries", t);
+          const a = prog(t, .4, 1);
+          lineChart(ctx, 130, 220, 1020, 330, dates, series, prog(t, 1, 9), a);
+          let lx = 130;
+          series.forEach((s) => {
+            setFont(ctx, 16, 600); const lw = ctx.measureText(s.label).width;
+            setA(a); ctx.strokeStyle = s.color; ctx.lineWidth = 4; ctx.setLineDash(s.dash || []);
+            ctx.beginPath(); ctx.moveTo(lx, 196); ctx.lineTo(lx + 28, 196); ctx.stroke(); ctx.setLineDash([]); setA(1);
+            txt(ctx, s.label, lx + 36, 202, 16, { w: 600, alpha: a }); lx += lw + 80;
+          });
+        } },
+      { label: "Scorecard", dur: 9,
+        cap: on ? `Overall: ${f(ref.mae)} minutes on trusted data, ${f(off.mae)} without the safeguard, ${f(on.mae)} with it. ${pct(on.deferred)} of deliveries were sent to a dispatcher.`
+                : `Overall: ${f(off.mae)} minutes average miss.`,
+        draw(ctx, t) {
+          headline(ctx, "THE SCORECARD", `${M.name}: average ETA miss`, t);
+          const cols = isRef
+            ? [["Simple baseline", off.baselineMae, C.amber, null], ["Our AI", off.mae, C.teal, off.mae - off.baselineMae], ...(on ? [["With safeguard", on.mae, C.green, on.mae - off.mae]] : [])]
+            : [["Trusted data", ref.mae, "#9aa6bd", null], ["No safeguard", off.mae, C.red, off.mae - ref.mae], ...(on ? [["With safeguard", on.mae, C.green, on.mae - off.mae]] : [])];
+          cols.forEach((c, i) => {
+            const a = prog(t, .6 + i * .9, 1.5 + i * .9), x = 80 + i * 380, y = 230;
+            setA(a); rr(ctx, x, y, 360, 200, 16, C.panel, C.line); ctx.fillStyle = c[2]; ctx.fillRect(x, y, 360, 5); setA(1);
+            txt(ctx, c[0].toUpperCase(), x + 26, y + 46, 16, { w: 700, color: C.dim, alpha: a });
+            txt(ctx, `${f(c[1] * (0.9 + 0.1 * prog(t, .6 + i * .9, 2 + i * .9)))} min`, x + 26, y + 118, 50, { w: 800, color: c[2], alpha: a });
+            if (c[3] != null) txt(ctx, `${sgn(c[3])} min vs ${i === 1 ? (isRef ? "baseline" : "trusted") : "no safeguard"}`, x + 26, y + 164, 18, { w: 600, color: c[3] > 0.05 ? C.red : C.green, alpha: a });
+          });
+          const facts = [
+            [`${pct((on || off).over15)}`, "of ETAs miss by 15+ min" + (on ? " (with safeguard)" : "")],
+            [on ? pct(on.deferred) : "—", "sent to a dispatcher"],
+            [`±${f(off.maeSd, 2)} min`, `spread across ${off.seeds} repeat runs`],
+          ];
+          facts.forEach((fc, i) => {
+            const a = prog(t, 3.6 + i * .5, 4.4 + i * .5), x = 80 + i * 380;
+            txt(ctx, fc[0], x + 4, 510, 34, { w: 800, alpha: a });
+            txt(ctx, fc[1], x + 4, 542, 17, { color: C.dim, alpha: a });
+          });
+        } },
+      { label: "Verdict", dur: 8,
+        cap: `Verdict: ${V.head}. ${V.body} Next step: ${V.action}`,
+        draw(ctx, t) {
+          txt(ctx, "VERDICT", 80, 170, 20, { w: 600, color: tone, alpha: prog(t, 0, .6) });
+          const a = prog(t, .2, .9);
+          setA(a); rr(ctx, 80, 200, 1120, 150, 18, "rgba(255,255,255,.03)", tone); ctx.fillStyle = tone; ctx.fillRect(80, 200, 10, 150); setA(1);
+          txt(ctx, V.head, 120, 290, 46, { w: 800, color: tone, alpha: a, maxW: 1040 });
+          txt(ctx, V.body, 80, 420, 26, { alpha: prog(t, 1.2, 2), maxW: 1120, lh: 1.4 });
+          txt(ctx, "NEXT STEP", 80, 530, 16, { w: 700, color: C.teal, alpha: prog(t, 2.4, 3) });
+          txt(ctx, V.action, 80, 566, 24, { w: 600, alpha: prog(t, 2.6, 3.4), maxW: 1120 });
+        } },
+      { label: "Company impact", dur: 9,
+        cap: isRef
+          ? `At ${X.fmt(per)} deliveries a day, trusted data is the yardstick${on ? `; the safeguard would send about ${X.fmt(reviews)} deliveries a day to dispatchers` : ""}.`
+          : `At ${X.fmt(per)} deliveries a day, this problem adds about ${X.fmt(extraOff)} minutes of ETA error daily${on ? `, ${X.fmt(extraOn)} with the safeguard, and about ${reviewMin} minutes of dispatcher review` : ""}.`,
+        draw(ctx, t) {
+          headline(ctx, "WHAT IT MEANS FOR THE COMPANY", `One region, ${X.fmt(per)} deliveries a day`, t);
+          const tiles = [
+            ["CUSTOMERS", isRef ? "Yardstick" : `${sgn(extraOff, 0)} min/day`,
+             isRef ? `Average miss ${f(off.mae)} min vs ${f(off.baselineMae)} for a simple baseline.` : `extra ETA error vs trusted data${on ? `; ${sgn(extraOn, 0)} min/day with the safeguard` : ""}.`,
+             isRef ? C.teal : extraOff > 0 ? C.red : C.green],
+            ["DISPATCHERS", on ? `≈ ${reviewMin} min/day` : "—",
+             on ? `${X.fmt(reviews)} reviews/day (${pct(on.deferred)}) at ~${A.reviewSeconds} s each.` : "No safeguard run.",
+             on && on.deferred * 100 > G.maxSentToDispatcherPct ? C.red : C.teal],
+            ["LARGE MISSES", `${X.fmt(bigMiss)}/day`, `deliveries with an ETA off by 15+ minutes${on ? " (with safeguard)" : ""}.`, C.amber],
+          ];
+          tiles.forEach((tl, i) => {
+            const a = prog(t, .8 + i * 1.2, 1.8 + i * 1.2), x = 80 + i * 380, y = 250 + (1 - a) * 24;
+            setA(a); rr(ctx, x, y, 360, 290, 16, C.panel, C.line); ctx.fillStyle = tl[3]; ctx.fillRect(x, y, 360, 5); setA(1);
+            txt(ctx, tl[0], x + 26, y + 46, 16, { w: 700, color: tl[3], alpha: a });
+            txt(ctx, tl[1], x + 26, y + 112, 40, { w: 800, alpha: a, maxW: 320 });
+            txt(ctx, tl[2], x + 26, y + 166, 18, { color: C.dim, alpha: a, maxW: 310, lh: 1.45 });
+          });
+          txt(ctx, `Planning assumptions: ${X.fmt(per)} deliveries/day, ${A.reviewSeconds} s per review. Accuracy numbers are measured; workload is an estimate.`,
+              80, 610, 16, { color: C.dim, alpha: prog(t, 4, 5) });
+        } },
+    ];
+    return { id: cond, title: M.name, file: `scenario_${cond}`, scenes };
+  }
+
+  /* =========================================================================
+     ENGINE — pure function of (program, time); shared by player, recorder,
+     and offline MP4 rendering (render_videos.py).
+  ========================================================================= */
+  let PROGRAMS = [], cur = null;
+  function finalize(p) { let t = 0; p.starts = p.scenes.map((s) => { const a = t; t += s.dur; return a; }); p.duration = t; return p; }
+  function buildPrograms(TL) {
+    const list = [finalize({ id: "overview", title: "Overview", file: "impact_roadmap", scenes: buildOverview() })];
+    if (TL) TL.conditions.forEach((c, i) => { const p = buildScenario(c, TL, i + 1, TL.conditions.length); if (p) list.push(finalize(p)); });
+    PROGRAMS = list;
+    return list;
+  }
+  function sceneAt(p, T) {
+    T = clamp(T, 0, p.duration - 1e-6);
+    let i = p.scenes.length - 1;
+    for (let k = 0; k < p.scenes.length; k++) if (T < p.starts[k] + p.scenes[k].dur) { i = k; break; }
+    return { i, local: T - p.starts[i] };
+  }
+  function drawFrame(ctx, T, p) {
+    p = p || cur;
+    const { i, local } = sceneAt(p, T), s = p.scenes[i];
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.lineCap = "butt";
+    ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
+    const g = ctx.createRadialGradient(W * .85, -80, 40, W * .85, -80, 700);
+    g.addColorStop(0, "rgba(45,212,191,.10)"); g.addColorStop(1, "rgba(45,212,191,0)");
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    const out = 1 - prog(local, s.dur - .35, s.dur);
+    CTX = ctx; FADE = (i === 0 ? out : Math.min(prog(local, 0, .35), out));
+    if (i === p.scenes.length - 1) FADE = prog(local, 0, .35);   // hold last frame
+    ctx.save(); ctx.globalAlpha = FADE; s.draw(ctx, local); ctx.restore();
+    FADE = 1; ctx.globalAlpha = 1;
+    txt(ctx, `${D.team} · ${p.title}`, 80, 56, 16, { w: 600, color: C.dim });
+    txt(ctx, `${i + 1} / ${p.scenes.length}  ·  ${s.label}`, W - 80, 56, 16, { color: C.dim, align: "right" });
+    ctx.fillStyle = "rgba(11,18,32,.88)"; ctx.fillRect(0, H - 74, W, 74);
+    txt(ctx, s.cap, W / 2, H - 46, 18, { align: "center", maxW: W - 140, lh: 1.25,
+      alpha: prog(local, .2, .8) * (i === p.scenes.length - 1 ? 1 : 1 - prog(local, s.dur - .3, s.dur)) });
+    ctx.fillStyle = C.line; ctx.fillRect(0, H - 4, W, 4);
+    ctx.fillStyle = C.teal; ctx.fillRect(0, H - 4, W * (T / p.duration), 4);
+  }
+  const byId = (id) => PROGRAMS.find((p) => p.id === id);
+  let readyResolve; const ready = new Promise((r) => (readyResolve = r));
+  window.RoadmapVideo = {
+    W, H, ready,
+    programs: () => PROGRAMS.map((p) => ({ id: p.id, title: p.title, file: p.file, duration: p.duration })),
+    duration: (id) => byId(id).duration,
+    drawFrame: (ctx, T, id) => drawFrame(ctx, T, id ? byId(id) : cur),
+  };
+
+  /* =========================================================================
+     PLAYER UI
+  ========================================================================= */
+  const $ = (id) => document.getElementById(id);
+  const canvas = $("rm-canvas");
+  const ctx = canvas ? canvas.getContext("2d") : null;
+  let T = 0, playing = false, last = 0, lastScene = -1, recording = false, onEnd = () => {};
+  const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+  const ui = canvas ? { btn: $("rm-play"), seek: $("rm-seek"), time: $("rm-time"), chips: $("rm-chips"), progs: $("rm-progs"),
+    caption: $("rm-caption"), narrate: $("rm-narrate"), status: $("rm-status"), data: $("rm-data") } : null;
+
+  function selectProgram(id) {
+    stop(); cur = byId(id) || PROGRAMS[0]; T = 0; lastScene = -1;
+    [...ui.progs.children].forEach((b) => b.setAttribute("aria-selected", String(b.dataset.id === cur.id)));
+    ui.chips.innerHTML = "";
+    cur.scenes.forEach((s, i) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "rm-chip"; b.textContent = s.label; b.setAttribute("role", "tab");
+      b.addEventListener("click", () => { if (!recording) { T = cur.starts[i] + 0.01; lastScene = -1; render(); } });
+      ui.chips.appendChild(b);
+    });
+    render();
+  }
+  function renderProgramTabs() {
+    ui.progs.innerHTML = "";
+    PROGRAMS.forEach((p) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "rm-prog"; b.dataset.id = p.id; b.setAttribute("role", "tab");
+      b.textContent = p.id === "overview" ? "▣ Overview" : p.title;
+      b.addEventListener("click", () => { if (!recording) selectProgram(p.id); });
+      ui.progs.appendChild(b);
+    });
+  }
+  function speak(text) {
+    if (!ui.narrate.checked || !("speechSynthesis" in window)) return;
+    speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.rate = 1.05; speechSynthesis.speak(u);
+  }
+  function render() {
+    drawFrame(ctx, T, cur);
+    const { i } = sceneAt(cur, T);
+    ui.seek.value = String(Math.round((T / cur.duration) * 1000));
+    ui.time.textContent = `${mmss(T)} / ${mmss(cur.duration)}`;
+    [...ui.chips.children].forEach((c, k) => c.setAttribute("aria-selected", String(k === i)));
+    if (i !== lastScene) { lastScene = i; ui.caption.textContent = cur.scenes[i].cap; if (playing) speak(cur.scenes[i].cap); }
+  }
+  function tick(now) {
+    if (!playing) return;
+    T += (now - last) / 1000; last = now;
+    if (T >= cur.duration) { T = cur.duration - 0.001; render(); stop(); onEnd(); return; }
+    render(); requestAnimationFrame(tick);
+  }
+  function play() {
+    if (T >= cur.duration - 0.01) T = 0;
+    playing = true; last = performance.now(); lastScene = -1;
+    ui.btn.textContent = "❚❚"; ui.btn.setAttribute("aria-label", "Pause"); requestAnimationFrame(tick);
+  }
+  function stop() {
+    playing = false;
+    if (ui) { ui.btn.textContent = "▶"; ui.btn.setAttribute("aria-label", "Play"); }
+    if ("speechSynthesis" in window) speechSynthesis.cancel();
+  }
+
+  /* Real-time canvas capture of one program → downloads a video file. */
+  function recordProgram(p) {
+    return new Promise((resolve, reject) => {
+      if (!canvas.captureStream || !window.MediaRecorder) return reject(new Error("unsupported"));
+      const types = ["video/mp4;codecs=avc1", "video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"];
+      const type = types.find((m) => MediaRecorder.isTypeSupported(m)) || "";
+      const chunks = [], mr = new MediaRecorder(canvas.captureStream(30), type ? { mimeType: type, videoBitsPerSecond: 6e6 } : undefined);
+      mr.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+      mr.onstop = () => {
+        const ext = (mr.mimeType || type).includes("mp4") ? "mp4" : "webm", a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob(chunks, { type: mr.mimeType || type }));
+        a.download = `${p.file}.${ext}`; document.body.appendChild(a); a.click(); a.remove();
+        resolve(`${p.file}.${ext}`);
+      };
+      selectProgram(p.id);
+      onEnd = () => { onEnd = () => {}; setTimeout(() => mr.stop(), 300); };
+      mr.start(250); play();
+    });
+  }
+  async function recordMany(list) {
+    if (recording) return;
+    const recBtn = $("rm-record"), allBtn = $("rm-record-all");
+    recording = true; recBtn.disabled = allBtn.disabled = true;
+    const saved = [];
+    try {
+      for (let k = 0; k < list.length; k++) {
+        ui.status.textContent = `Recording ${k + 1} of ${list.length}: “${list[k].title}” (${Math.round(list[k].duration)} s) — keep this tab visible.`;
+        saved.push(await recordProgram(list[k]));
+      }
+      ui.status.textContent = `Saved ${saved.join(", ")}.`;
+    } catch (e) {
+      ui.status.textContent = "This browser can't record video. Use Chrome or Edge, or run render_videos.py.";
+    }
+    recording = false; recBtn.disabled = allBtn.disabled = false;
+  }
+
+  function setDataStatus(TL, source) {
+    ui.data.textContent = TL
+      ? `Live data: ${source} · ${TL.rows} rows · scenarios: ${TL.conditions.map((c) => (window.ROADMAP_CONDITIONS[c] || {}).name || titleCase(c)).join(", ")}`
+      : "Live experiment data not found — showing the overview from roadmap-data.js. Load timeline.csv to generate scenario videos.";
+    ui.data.dataset.state = TL ? "ok" : "missing";
+  }
+  function boot(TL, source) {
+    buildPrograms(TL); renderProgramTabs(); selectProgram(cur && byId(cur.id) ? cur.id : "overview");
+    setDataStatus(TL, source); readyResolve(window.RoadmapVideo);
+  }
+
+  if (!canvas) {           // headless use (no player markup): just build programs
+    window.ROADMAP_READY.then((TL) => { buildPrograms(TL); cur = PROGRAMS[0]; readyResolve(window.RoadmapVideo); });
+    return;
+  }
+  ui.btn.addEventListener("click", () => { if (!recording) (playing ? stop() : play()); });
+  $("rm-restart").addEventListener("click", () => { if (!recording) { T = 0; lastScene = -1; render(); if (!playing) play(); } });
+  ui.seek.addEventListener("input", () => { if (!recording) { T = (ui.seek.value / 1000) * cur.duration; render(); } });
+  ui.narrate.addEventListener("change", () => { if (!ui.narrate.checked && "speechSynthesis" in window) speechSynthesis.cancel(); });
+  canvas.addEventListener("click", () => ui.btn.click());
+  $("rm-record").addEventListener("click", () => recordMany([cur]));
+  $("rm-record-all").addEventListener("click", () => recordMany(PROGRAMS));
+  $("rm-file").addEventListener("change", (e) => {
+    const file = e.target.files && e.target.files[0]; if (!file) return;
+    file.text().then((t) => {
+      const rows = window.parseTimelineCSV(t);
+      if (!rows.length) { ui.status.textContent = "That file has no usable timeline rows."; return; }
+      const TL = window.applyRoadmapTimeline(window.aggregateTimeline(rows));
+      boot(TL, file.name); renderStatic();
+    });
+  });
+
+  function renderStatic() {
+    const mp4 = $("rm-mp4");
+    if (D.videoFile) mp4.href = D.videoFile; else mp4.remove();
+    $("rm-report").href = D.reportPage; // PATH
+    $("rm-phases").innerHTML = D.phases.map((p) => `
+      <li class="rm-phase"><span class="rm-tag">${p.tag}</span><h4>${p.title}</h4>
+      <p>${p.body}</p><span class="rm-owner">Owner: ${p.owner}</span></li>`).join("");
+    $("rm-note").textContent =
+      `Results: ${D.dataset}. Company-impact figures are planning estimates using ` +
+      `${X.fmt(A.dailyDeliveries)} deliveries/day and ${A.reviewSeconds} s per review; ` +
+      `gates are proposals for the operations manager to approve.`;
+  }
+  const fontsReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+  Promise.all([window.ROADMAP_READY, fontsReady]).then(([TL]) => { boot(TL, D.timelineUrl); renderStatic(); });
+})();
+</script>

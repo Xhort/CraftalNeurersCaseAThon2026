@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ETA Reliability — What Changes for You</title>
+<style>
+:root{--ink:#14202f;--dim:#5b6b80;--line:#dfe5ee;--bg:#f6f8fb;--card:#fff;--accent:#0f9f8f;--amber:#b7791f;--red:#c53030;--green:#2f855a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ink:#e8edf5;--dim:#9aa8bc;--line:#26324a;--bg:#0b1220;--card:#131c2e;--accent:#2dd4bf;--amber:#f5a524;--red:#f87171;--green:#34d399}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:860px;margin:0 auto;padding:40px 20px 80px}
+.bar{display:flex;gap:10px;justify-content:flex-end;margin-bottom:24px}
+.bar button,.bar a{font:inherit;font-size:.9rem;padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;text-decoration:none}
+.bar button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.eyebrow{color:var(--accent);font-weight:700;letter-spacing:.12em;font-size:.78rem;text-transform:uppercase;margin:0}
+h1{font-size:clamp(1.7rem,4vw,2.3rem);line-height:1.15;margin:6px 0 8px}
+h2{font-size:1.25rem;margin:36px 0 10px;padding-top:8px;border-top:1px solid var(--line)}
+.meta{color:var(--dim);font-size:.9rem;margin:0}
+.key{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--amber);border-radius:12px;padding:18px 20px;margin:24px 0}
+.key strong{font-size:1.1rem}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.stat b{display:block;font-size:1.6rem;line-height:1.2}
+.stat span{color:var(--dim);font-size:.85rem}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:.93rem}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--dim)}
+tr:last-child td{border-bottom:0}
+ol.steps{padding-left:20px} ol.steps li{margin-bottom:8px}
+.pill{display:inline-block;padding:1px 9px;border-radius:999px;font-size:.8rem;font-weight:600;border:1px solid currentColor}
+.ok{color:var(--green)}.warn{color:var(--amber)}.bad{color:var(--red)}
+.note{color:var(--dim);font-size:.85rem}
+.yes{color:var(--green);font-weight:700}.no{color:var(--red);font-weight:700}
+@media (max-width:640px){.grid{grid-template-columns:1fr}}
+@media print{.bar{display:none}body{background:#fff;color:#000}main{padding:0}.stat,table,.key{break-inside:avoid}h2{break-after:avoid}}
+</style>
+</head>
+<body>
+<main>
+  <div class="bar">
+    <a href="#" id="back">← Back to site</a>
+    <button type="button" id="dl">Download (.html)</button>
+    <button type="button" class="primary" onclick="window.print()">Print / Save as PDF</button>
+  </div>
+
+  <p class="eyebrow" id="team"></p>
+  <h1>ETA reliability: what changes for you — and what doesn't</h1>
+  <p class="meta" id="meta"></p>
+
+  <div class="key"><strong>In one sentence:</strong> <span id="oneline"></span></div>
+
+  <h2>1. What we found</h2>
+  <p id="found"></p>
+  <div class="grid" id="stats"></div>
+
+  <div id="scenWrap">
+  <h3>Every scenario at a glance</h3>
+  <table><thead><tr><th>Scenario</th><th>Avg miss, no safeguard</th><th>With safeguard</th><th>Sent to dispatcher</th><th>Safeguard effect</th></tr></thead><tbody id="scen"></tbody></table>
+  <p class="note" id="scenNote"></p>
+  </div>
+
+  <h2>2. What changes for you right now</h2>
+  <table>
+    <thead><tr><th>Question</th><th>Answer today</th></tr></thead>
+    <tbody>
+      <tr><td>Will customer ETAs change?</td><td><span class="no">No.</span> ETAs keep using trusted data only. The noisy feed is monitored, not used.</td></tr>
+      <tr><td>Do I need to do anything new?</td><td><span class="no">Not yet.</span> Nothing changes until the shadow pilot, and only in the pilot region.</td></tr>
+      <tr><td>Will my routes or assignments change?</td><td><span class="no">No.</span> Even in the pilot, new ETAs are shown beside current ETAs and never drive routing.</td></tr>
+      <tr><td>Is anyone measuring my work?</td><td>Only review <em>time</em> in the pilot, to size the workload. Flagging or overriding an ETA is never counted against you.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>3. During the shadow pilot (if Phase 1 passes)</h2>
+  <p>In <span id="region"></span>, some deliveries will be <strong>sent to a dispatcher</strong> instead of being handled automatically. Expect roughly <strong id="reviews"></strong>.</p>
+  <h3>When the system asks for your review</h3>
+  <table>
+    <thead><tr><th>You'll see</th><th>What it means</th><th>What to do</th></tr></thead>
+    <tbody>
+      <tr><td><span class="pill ok">Handled automatically</span></td><td>Evidence comes mostly from trusted, recent records.</td><td>Nothing.</td></tr>
+      <tr><td><span class="pill warn">Low source trust</span></td><td>Much of the evidence for this area comes from the fast, unreliable feed (trust score <span id="trust"></span>).</td><td>Glance at the expected range; accept if it matches your knowledge of the area.</td></tr>
+      <tr><td><span class="pill bad">Sent to a dispatcher</span></td><td>The ETA may be wrong: area history is old, or unreliable data is pulling the estimate.</td><td>Accept, correct, or escalate (below).</td></tr>
+    </tbody>
+  </table>
+  <h3>How to accept, correct, or escalate</h3>
+  <ol class="steps">
+    <li><strong>Look at the evidence panel:</strong> the ETA, its expected range, how old the area's history is, and how much comes from the unreliable feed.</li>
+    <li><strong>Accept</strong> if the ETA looks right for that area and time of day.</li>
+    <li><strong>Correct</strong> by typing your own ETA if you know better (traffic, road works, a building that's slow to access). Add a short reason if you can.</li>
+    <li><strong>Escalate</strong> if something looks broken — e.g. many strange ETAs in one area. This goes straight to the data-quality owner.</li>
+  </ol>
+  <p class="note">Your corrections are logged and reviewed by the data team. They are <strong>not</strong> fed into the model automatically — that would create a new way for bad data to get in.</p>
+
+  <h2>4. The roadmap</h2>
+  <table><thead><tr><th>When</th><th>Step</th><th>What happens</th><th>Owner</th></tr></thead><tbody id="phases"></tbody></table>
+
+  <h2>5. Gates we must pass before going further</h2>
+  <table><thead><tr><th>Gate</th><th>Target</th><th>Today</th></tr></thead><tbody id="gates"></tbody></table>
+
+  <h2>6. We stop the pilot if…</h2>
+  <ul id="stops"></ul>
+
+  <h2>7. Who to contact</h2>
+  <table><thead><tr><th>Role</th><th>Responsibility</th></tr></thead><tbody id="roles"></tbody></table>
+
+  <h2>8. Plain-language glossary</h2>
+  <table><tbody>
+    <tr><td><strong>ETA miss</strong></td><td>How far off a predicted delivery time was from the real one, in minutes.</td></tr>
+    <tr><td><strong>Trusted feed</strong></td><td>Delivery records that are slower to arrive but checked and accurate.</td></tr>
+    <tr><td><strong>Noisy feed</strong></td><td>Records that arrive fast but often carry timing and location errors.</td></tr>
+    <tr><td><strong>Safeguard</strong></td><td>Our fix: it trusts unreliable records less and sends risky ETAs to a person.</td></tr>
+    <tr><td><strong>Shadow pilot</strong></td><td>New ETAs are shown but not used, so we can compare safely.</td></tr>
+    <tr><td><strong>Area history age</strong></td><td>How long since the system last got trusted records for that area.</td></tr>
+  </tbody></table>
+  <p class="note" id="foot"></p>
+</main>
+
+<script src="roadmap-data.js"></script>
+<script>
+window.ROADMAP_READY.then(function (TL) {
+  const D = window.ROADMAP_DATA, X = window.ROADMAP_DERIVED, R = D.results, A = D.assumptions, G = D.gates;
+  const $ = (id) => document.getElementById(id), f = (n) => Number(n).toFixed(1);
+  $("team").textContent = `${D.team} · ${D.event}`;
+  $("meta").textContent = `Prepared ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })} · Evidence: ${D.dataset}`;
+  $("oneline").textContent = `An unreliable data feed made our delivery-time estimates worse; our fix only partly solved it, so nothing changes for customers or dispatchers yet — we will fix the safeguard, then test it in ${A.pilotRegion} before any rollout.`;
+  const worse = (X.hasStale || X.hasCombined)
+    ? `On the old-data and combined tests it went from ${[X.hasStale ? f(R.staleOffMin) + " to " + f(R.staleOnMin) + " min" : null, X.hasCombined ? f(R.combinedOffMin) + " to " + f(R.combinedOnMin) + " min" : null].filter(Boolean).join(" and ")}.`
+    : "It also made the old-data and combined tests worse.";
+  $("found").textContent = `A fast but unreliable feed grew to ${R.noisyFeedSharePct}% of the evidence the model learns from. Average ETA misses rose from ${f(R.referenceMin)} to ${f(R.noisyMin)} minutes. Our safeguard brought that back to ${f(R.safeguardMin)} minutes — ${f(X.recovered)} of the ${f(X.loss)}-minute loss (${X.recoveredPct}%). ${worse} That isn't good enough to deploy.`;
+  const stats = [
+    [`${f(R.referenceMin)} min`, "average miss, trusted data only"],
+    [`+${f(X.loss)} min`, "added by the noisy feed"],
+    [`${X.recoveredPct}%`, "of that loss won back by the safeguard"],
+    [`${R.sentToDispatcherPct}%`, "of ETAs sent to a dispatcher"],
+    [`${R.handledWithoutReviewPct}%`, "handled without review"],
+    [`±${f(R.repeatRunSpread)} min`, "variation across repeat runs"],
+  ];
+  $("stats").innerHTML = stats.map(([b, s]) => `<div class="stat"><b>${b}</b><span>${s}</span></div>`).join("");
+  $("region").textContent = A.pilotRegion;
+  $("reviews").textContent = `${X.fmt(X.reviewsPerDay)} reviews a day (about ${X.reviewMinPerDay} minutes) per ${X.fmt(A.dailyDeliveries)} deliveries`;
+  $("trust").textContent = `${R.sourceTrustPct}%`;
+  $("phases").innerHTML = D.phases.map((p) => `<tr><td><strong>${p.tag}</strong></td><td>${p.title}</td><td>${p.body}</td><td>${p.owner}</td></tr>`).join("");
+  const gate = (name, target, today, pass) =>
+    `<tr><td>${name}</td><td>${target}</td><td>${today} <span class="${pass ? "yes" : "no"}">${pass ? "✓ pass" : "✗ not yet"}</span></td></tr>`;
+  $("gates").innerHTML = [
+    gate("Share of the noisy-feed loss recovered", `≥ ${G.recoverPctOfLoss}%`, `${X.recoveredPct}%`, X.recoveredPct >= G.recoverPctOfLoss),
+    (() => { const known = X.hasStale && X.hasCombined;
+             const ok = known && R.staleOnMin <= R.staleOffMin && R.combinedOnMin <= R.combinedOffMin;
+             return gate("Not worse than no safeguard on any test", "All 8 conditions",
+                         ok ? "Not worse on any test" : "Worse on old-data &amp; combined", ok); })(),
+    gate("ETAs sent to a dispatcher", `≤ ${G.maxSentToDispatcherPct}%`, `${R.sentToDispatcherPct}%`, R.sentToDispatcherPct <= G.maxSentToDispatcherPct),
+    gate("Stable across repeat runs", `≤ ±${f(G.maxRepeatRunSpread)} min`, `±${f(R.repeatRunSpread)} min`, R.repeatRunSpread <= G.maxRepeatRunSpread),
+  ].join("");
+  $("stops").innerHTML = D.stopConditions.map((s) => `<li>${s}</li>`).join("");
+  $("roles").innerHTML = D.roles.map((r) => `<tr><td><strong>${r.role}</strong></td><td>${r.does}</td></tr>`).join("");
+  $("foot").textContent = `Workload figures are planning estimates (${X.fmt(A.dailyDeliveries)} deliveries/day, ${A.reviewSeconds} s per review) and will be replaced with measured pilot values. Gates are proposals pending operations-manager approval.`;
+  $("back").href = document.referrer || "/";
+  $("dl").addEventListener("click", () => {
+    const clone = document.documentElement.cloneNode(true);
+    clone.querySelectorAll("script").forEach((s) => s.remove());
+    const blob = new Blob(["<!doctype html>\n" + clone.outerHTML], { type: "text/html" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+    a.download = "eta-reliability-user-report.html"; a.click();
+  });
+  // ---- every scenario at a glance (from the site's timeline.csv) ----
+  if (TL) {
+    const ref = TL.get("reference", false), pc = (v) => `${(v * 100).toFixed(1)}%`;
+    const rowsHtml = TL.conditions.map((c) => {
+      const off = TL.get(c, false), on = TL.get(c, true), M = window.ROADMAP_CONDITIONS[c] || { name: c };
+      if (!off) return "";
+      const d = on ? on.mae - off.mae : null;
+      const tone = d == null ? "" : (c === "reference" && Math.abs(d) < 0.5) ? "ok" : on.deferred >= 0.9 ? "bad" : d > 0.05 ? "bad" : d < -0.05 ? "ok" : "warn";
+      const flat = d != null && c === "reference" && Math.abs(d) < 0.5;
+      const word = d == null ? "—" : flat ? "No real change" : on.deferred >= 0.9 ? "Hands everything to dispatchers" : d > 0.05 ? "Worse" : d < -0.05 ? "Better" : "No real change";
+      return `<tr><td><strong>${M.name}</strong></td><td>${f(off.mae)} min</td><td>${on ? f(on.mae) + " min" : "—"}</td>
+        <td>${on ? pc(on.deferred) : "—"}</td><td><span class="pill ${tone}">${word}</span></td></tr>`;
+    }).join("");
+    $("scen").innerHTML = rowsHtml;
+    $("scenNote").textContent = `Measured on ${ref ? ref.dates.length : "?"} evaluation days of future deliveries, averaged over ${ref ? ref.seeds : "?"} repeat runs. Source: ${D.timelineUrl}.`;
+  } else {
+    $("scenWrap").style.display = "none";
+  }
+});
+</script>
+</body>
+</html>
