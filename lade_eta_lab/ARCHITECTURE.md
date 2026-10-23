@@ -21,7 +21,7 @@ FastAPI model lab · exported fitted trees · blind outcome reveal · evidence
         ↓
 Cloudflare Worker API · Durable Object review log · static website
         ↓
-Live AI comparison · dispatcher review · docs · presentation
+Live AI comparison · dispatcher review · impact roadmap · scenario videos · docs
 ```
 
 ## Online service boundary

@@ -9,6 +9,9 @@ await rm(dist, { recursive: true, force: true });
 await mkdir(resolve(dist, "lade_eta_lab"), { recursive: true });
 await mkdir(resolve(dist, "download-assets"), { recursive: true });
 await cp(resolve(root, "index.html"), resolve(dist, "index.html"));
+for (const filename of ["roadmap-section.html", "roadmap-data.js", "user-report.html"]) {
+  await cp(resolve(root, filename), resolve(dist, filename));
+}
 await cp(
   resolve(root, "lade_eta_lab/static"),
   resolve(dist, "lade_eta_lab/static"),
@@ -35,9 +38,13 @@ for (const filename of [
     resolve(dist, "download-assets", filename),
   );
 }
-await cp(
-  resolve(root, "lade_eta_lab/demo/fallback_demo.mp4"),
-  resolve(dist, "download-assets/fallback_demo.mp4"),
-);
-
+for (const [source, destination] of [
+  ["README (1).md", "roadmap_readme.md"],
+  ["roadmap-section.html", "roadmap-section.html"],
+  ["roadmap-data.js", "roadmap-data.js"],
+  ["user-report.html", "user-report.html"],
+  ["render_videos.py", "render_videos.py"],
+]) {
+  await cp(resolve(root, source), resolve(dist, "download-assets", destination));
+}
 console.log("Built Cloudflare static assets in dist/.");

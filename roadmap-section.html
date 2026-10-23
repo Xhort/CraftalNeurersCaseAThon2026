@@ -1,6 +1,6 @@
 <!-- =============================================================================
-  IMPACT ROADMAP SECTION — drop-in replacement for the "10-MINUTE PRESENTATION"
-  block. Plain HTML/CSS/JS, no build step, no libraries. All styles are scoped
+  IMPACT ROADMAP SECTION — interactive evidence for the live platform walkthrough.
+  Plain HTML/CSS/JS, no build step, no libraries. All styles are scoped
   under #roadmap and all JS lives in one closure, so it won't clash with the
   rest of the site.
 
@@ -10,7 +10,7 @@
 ============================================================================= -->
 <section id="roadmap" class="rm" aria-labelledby="rm-title">
   <div class="rm-wrap">
-    <p class="rm-eyebrow">05 · IMPACT ROADMAP</p>
+    <p class="rm-eyebrow">DATA-GENERATED WALKTHROUGH</p>
     <h2 id="rm-title" class="rm-h2">What our corrected data means for the company</h2>
     <p class="rm-lede">One overview briefing plus one video per experiment scenario, all generated live from the experiment data on this site: what the
       unreliable feed cost us, what the safeguard won back, and the gated path from here to a
@@ -48,6 +48,7 @@
 </section>
 
 <style>
+html,body{margin:0;background:#0b1220}
 #roadmap{--rm-bg:#0b1220;--rm-panel:#131c2e;--rm-line:#24314a;--rm-text:#e8edf5;--rm-dim:#93a1b8;
   --rm-accent:#2dd4bf;--rm-amber:#f5a524;--rm-red:#f87171;--rm-green:#34d399;
   background:var(--rm-bg);color:var(--rm-text);padding:72px 20px;
@@ -576,6 +577,12 @@
       b.addEventListener("click", () => { if (!recording) { T = cur.starts[i] + 0.01; lastScene = -1; render(); } });
       ui.chips.appendChild(b);
     });
+    const mp4 = $("rm-mp4"), rendered = D.videoFiles && D.videoFiles[cur.id];
+    if (mp4) {
+      const href = rendered || (cur.id === "overview" ? D.videoFile : "");
+      if (href) { mp4.href = href; mp4.hidden = false; mp4.textContent = `⬇ Download ${cur.title} MP4`; }
+      else mp4.hidden = true;
+    }
     render();
   }
   function renderProgramTabs() {
@@ -687,7 +694,7 @@
 
   function renderStatic() {
     const mp4 = $("rm-mp4");
-    if (D.videoFile) mp4.href = D.videoFile; else mp4.remove();
+    if (D.videoFile) mp4.href = D.videoFile; else mp4.hidden = true;
     $("rm-report").href = D.reportPage; // PATH
     $("rm-phases").innerHTML = D.phases.map((p) => `
       <li class="rm-phase"><span class="rm-tag">${p.tag}</span><h4>${p.title}</h4>

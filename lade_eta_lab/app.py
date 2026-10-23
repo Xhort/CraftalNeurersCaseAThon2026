@@ -50,6 +50,7 @@ DOCS = {
     "ai": PROJECT_DIR / "AI_USE_DISCLOSURE.md",
     "architecture": PROJECT_DIR / "ARCHITECTURE.md",
     "demo": PROJECT_DIR / "DEMO_SCRIPT.md",
+    "roadmap": ROOT_DIR / "README (1).md",
     "api": PROJECT_DIR / "API.md",
 }
 DOWNLOADS = {
@@ -62,7 +63,11 @@ DOWNLOADS = {
     "modification_log.csv": RESULTS_DIR / "modification_log.csv",
     "metrics_dictionary.json": RESULTS_DIR / "metrics_dictionary.json",
     "overrides.csv": OVERRIDES_PATH,
-    "fallback_demo.mp4": DEMO_DIR / "fallback_demo.mp4",
+    "roadmap_readme.md": ROOT_DIR / "README (1).md",
+    "roadmap-section.html": ROOT_DIR / "roadmap-section.html",
+    "roadmap-data.js": ROOT_DIR / "roadmap-data.js",
+    "user-report.html": ROOT_DIR / "user-report.html",
+    "render_videos.py": ROOT_DIR / "render_videos.py",
 }
 _decision_lock = threading.Lock()
 
@@ -302,7 +307,7 @@ def _load_live_model(scenario: str):
 
 @lru_cache(maxsize=1)
 def _live_demo_case_indices() -> tuple[int, ...]:
-    """Resolve the four disclosed teaching examples in their presentation order."""
+    """Resolve the four disclosed teaching examples in walkthrough order."""
     clean, poisoned = _live_demo_frames()
     package_ids = clean["package_id"].astype(str)
     indices: list[int] = []
@@ -392,6 +397,21 @@ def _uploaded_prediction_frames(
 @app.get("/", include_in_schema=False)
 def website() -> FileResponse:
     return FileResponse(ROOT_DIR / "index.html")
+
+
+@app.get("/roadmap-section.html", include_in_schema=False)
+def roadmap_section() -> FileResponse:
+    return FileResponse(ROOT_DIR / "roadmap-section.html")
+
+
+@app.get("/roadmap-data.js", include_in_schema=False)
+def roadmap_data() -> FileResponse:
+    return FileResponse(ROOT_DIR / "roadmap-data.js", media_type="application/javascript")
+
+
+@app.get("/user-report.html", include_in_schema=False)
+def user_report() -> FileResponse:
+    return FileResponse(ROOT_DIR / "user-report.html")
 
 
 @app.get("/api/health")
@@ -832,6 +852,7 @@ def docs_index() -> dict[str, object]:
         "ai": "AI use disclosure",
         "architecture": "Architecture",
         "demo": "Demo and recording script",
+        "roadmap": "Impact roadmap and videos",
         "api": "API reference",
     }
     return {"documents": [{"id": key, "label": labels[key]} for key in DOCS]}

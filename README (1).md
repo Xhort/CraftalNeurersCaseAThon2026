@@ -15,7 +15,7 @@ the user report update with no code changes.
 
 ## Install (plain HTML site)
 1. Put `roadmap-data.js` and `user-report.html` next to `index.html`.
-2. Replace the "10-MINUTE PRESENTATION" block with the contents of `roadmap-section.html`.
+2. Embed `roadmap-section.html` in the platform's Impact Roadmap section; do not add a slide-deck mode.
 3. Make sure `/api/downloads/timeline.csv` is served from the same domain (it already is on antydata.com).
 
 React/Vite/Next: put the files in `public/`, wrap `roadmap-section.html` in
@@ -27,9 +27,13 @@ and embed it with an `<iframe>`.
 - **Script (recommended):**
   ```
   pip install playwright imageio-ffmpeg && python -m playwright install chromium
-  python render_videos.py --url https://antydata.com/ --out videos
+  python render_videos.py --url https://antydata.com/roadmap-section.html --out lade_eta_lab/demo/videos
   ```
-  Copy `videos/*.mp4` next to `fallback_demo.mp4` so they're served from `/api/downloads/`.
+  The website serves the rendered files from `/lade_eta_lab/demo/videos/`.
+
+## Demonstration rule
+
+The competition demonstration is a live walkthrough of the working platform. It does not use a slideshow. The generated scenario videos are supporting evidence inside the platform and a technical fallback, not a replacement slide presentation.
 
 ## How each scenario video decides its verdict (no hand-written conclusions)
 - Safeguard sends ≥ 90% of deliveries to dispatchers → "handed to dispatchers" (not a fix)

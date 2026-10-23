@@ -14,6 +14,8 @@ def test_health_and_overview_use_measured_results():
     assert './lade_eta_lab/static/styles.css' in website.text
     assert "More data made delivery ETAs" in website.text
     assert "Do not deploy yet" in website.text
+    assert 'id="roadmap-frame"' in website.text
+    assert 'id="deck-modal"' not in website.text
     assert client.get("/lade_eta_lab/static/app.js").status_code == 200
 
     health = client.get("/api/health")
@@ -222,11 +224,17 @@ def test_case_review_and_validated_decision_log(tmp_path, monkeypatch):
 
 def test_documentation_and_download_allowlist():
     docs = client.get("/api/docs").json()["documents"]
-    assert len(docs) >= 9
+    assert len(docs) >= 10
     assert client.get("/api/docs/method").status_code == 200
     assert client.get("/api/docs/deployment").status_code == 200
+    assert client.get("/api/docs/roadmap").status_code == 200
     assert client.get("/api/downloads/data_manifest.json").status_code == 200
-    assert client.get("/demo/fallback_demo.mp4").status_code == 200
+    assert client.get("/roadmap-section.html").status_code == 200
+    assert client.get("/roadmap-data.js").status_code == 200
+    assert client.get("/user-report.html").status_code == 200
+    assert client.get("/api/downloads/render_videos.py").status_code == 200
+    assert client.get("/lade_eta_lab/demo/videos/impact_roadmap.mp4").status_code == 200
+    assert client.get("/lade_eta_lab/demo/videos/scenario_combined.mp4").status_code == 200
     assert client.get("/api/downloads/../../data/raw/delivery_jl.csv").status_code == 404
 
 

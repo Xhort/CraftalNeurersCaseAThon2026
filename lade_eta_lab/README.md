@@ -10,9 +10,9 @@ The website is intentionally written for a nontechnical audience. Technical deta
 |---|---|
 | FastAPI backend | Live model inference, blind outcome reveal, results, timeline, case review, decision logging, documentation, and downloads |
 | Experiment pipeline | Leakage-aware features, chronological splits, four degradation conditions, mitigation, repeated seeds, and saved model artifacts |
-| Website | Plain-language conclusion, three-step live AI prediction, prepared-CSV batch upload, full experiment controls, mechanism trace, dispatcher walkthrough, documentation tabs, and a 10-minute presentation mode |
+| Website | Plain-language conclusion, three-step live AI prediction, prepared-CSV batch upload, full experiment controls, mechanism trace, dispatcher walkthrough, interactive impact roadmap, scenario videos, and documentation tabs |
 | Evidence package | Run-level and daily CSV files, data manifest, modification log, metric dictionary, governance plan, and AI-use disclosure |
-| Fallback demo | A 75-second captioned MP4 plus reproducible capture and build scripts |
+| Walkthrough support | Data-generated roadmap videos, a dispatcher-facing report, and reproducible frame-exact MP4 rendering |
 | Online deployment | Edge-hosted site and API, live exported-tree inference, and durable review decisions |
 
 ## Run online
@@ -39,7 +39,7 @@ Open `http://127.0.0.1:8000`. Interactive API documentation is at `http://127.0.
 
 If you open the root `index.html` through VS Code Live Server, the complete CSS and JavaScript now load from relative paths. That view automatically connects to FastAPI at `http://127.0.0.1:8000`; if the backend is stopped, the polished design remains visible and a yellow banner shows the command needed to enable live data.
 
-The Required Files section can launch presentation mode or download `demo/fallback_demo.mp4`. It is silent by design and keeps the essential narration on screen; `DEMO_SCRIPT.md` supplies the optional spoken track.
+The demonstration is a live walkthrough of the working platform, not a slideshow. The Impact Roadmap section plays data-generated scenario briefings inside the site and links to the dispatcher-facing report. `DEMO_SCRIPT.md` provides the live route and technical fallback.
 
 ## Reproduce the measured experiment
 
@@ -66,7 +66,7 @@ To check the pipeline without the source file:
 python run_experiments.py --synthetic --max-rows 5000 --seeds 17
 ```
 
-Synthetic output is labeled `SYNTHETIC_DEMO` and must not replace measured LaDe evidence in the presentation. The website also exposes `POST /api/experiments/preview`; that endpoint runs in memory and does not overwrite the measured files.
+Synthetic output is labeled `SYNTHETIC_DEMO` and must not replace measured LaDe evidence in the live walkthrough. The website also exposes `POST /api/experiments/preview`; that endpoint runs in memory and does not overwrite the measured files.
 
 ## Experiment in plain language
 
@@ -89,7 +89,7 @@ The website’s **Live AI prediction** section evaluates trees exported from the
 2. **Full degraded pipeline:** a model fitted on the controlled unreliable-feed training condition receives that delivery’s corresponding degraded inputs.
 3. **Degraded pipeline + safeguard:** the reliability-aware fitted model applies weighted training, robust input backoff, and the human-review rule to the same degraded condition.
 
-Training is performed ahead of the presentation so the walkthrough is fast and repeatable. Every online button request freshly evaluates the exported fitted trees for the selected delivery. Safeguard preprocessing uses the same fixed evaluation-batch median registered by the Python experiment. The outcome is withheld from both the case list and prediction responses; the browser requests it from a separate retrospective reveal endpoint only after showing the trusted and degraded predictions.
+Training is performed ahead of the live walkthrough so the interaction is fast and repeatable. Every online button request freshly evaluates the exported fitted trees for the selected delivery. Safeguard preprocessing uses the same fixed evaluation-batch median registered by the Python experiment. The outcome is withheld from both the case list and prediction responses; the browser requests it from a separate retrospective reveal endpoint only after showing the trusted and degraded predictions.
 
 The low-quality scenario is an **end-to-end scenario**, not an attribution test: it bundles simulated corruption of duplicated training rows with controlled changes to selected evaluation inputs. The four selectable cases are disclosed teaching examples, including a counterexample. They do not replace the aggregate conclusion from 3,407 held-out deliveries and 24 matched runs.
 
@@ -131,4 +131,8 @@ AI_USE_DISCLOSURE.md       Evaluated AI and generative-AI disclosure
 ARCHITECTURE.md            Data and service architecture
 DEMO_SCRIPT.md             Live walkthrough and fallback recording plan
 API.md                     Endpoint reference
+../roadmap-section.html    Interactive impact-roadmap and scenario-video player
+../roadmap-data.js         Roadmap assumptions, gates, and live-data aggregation
+../user-report.html        Dispatcher-facing plain-language report
+../render_videos.py        Frame-exact MP4 renderer for every roadmap program
 ```

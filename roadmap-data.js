@@ -71,7 +71,14 @@ window.ROADMAP_DATA = {
   ],
 
   nextCheckpoint: "End of week 4 (date TBD)",
-  videoFile: "/api/downloads/impact_roadmap.mp4", // pre-rendered fallback (optional)
+  videoFile: "/lade_eta_lab/demo/videos/impact_roadmap.mp4",
+  videoFiles: {
+    overview: "/lade_eta_lab/demo/videos/impact_roadmap.mp4",
+    reference: "/lade_eta_lab/demo/videos/scenario_reference.mp4",
+    stale: "/lade_eta_lab/demo/videos/scenario_stale.mp4",
+    low_quality: "/lade_eta_lab/demo/videos/scenario_low_quality.mp4",
+    combined: "/lade_eta_lab/demo/videos/scenario_combined.mp4",
+  },
   // Live experiment data from the site. Every scenario video is generated from this file.
   timelineUrl: "/api/downloads/timeline.csv",
   reportPage: "user-report.html",

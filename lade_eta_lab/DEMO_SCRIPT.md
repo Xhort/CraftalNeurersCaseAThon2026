@@ -4,7 +4,7 @@
 
 | Time | Screen | Presenter action and point |
 |---|---|---|
-| 0:00–0:35 | Presentation slide 1 | Ask when more information can make a decision worse |
+| 0:00–0:35 | Platform overview | Ask when more information can make a decision worse and state the no-go result |
 | 0:35–1:15 | Overview | Define dispatcher, ETA, consequence of error, evaluation case, and MAE |
 | 1:15–1:55 | Documentation data tab | Show source, date range, row count, filters, license conflict, and chronological split |
 | 1:55–2:40 | Experiment lab reference | Establish the repeatable result and fixed cases |
@@ -13,7 +13,9 @@
 | 4:35–5:05 | Mechanism and safeguard | Clarify that the low-quality test bundles retraining plus degraded inputs; explain weighting, safe backoff, and deferral |
 | 5:05–6:05 | Eight-way comparison | State the modest recovery and the stale/combined failures clearly |
 | 6:05–8:10 | Human oversight | Inspect one flagged order and record a correction or escalation |
-| 8:10–10:00 | Recommendation and governance | No deployment; recalibrate, subgroup test, then bounded shadow pilot |
+| 8:10–10:00 | Impact roadmap | Play or scrub the in-platform briefing; show the gates, owners, user report, and no-deployment recommendation |
+
+This run of show is a live walkthrough of the working platform. Do not launch or use a slide deck.
 
 ## Live AI walkthrough
 
@@ -26,9 +28,9 @@
 
 The model artifacts are fitted in advance. Online, each click asks the Cloudflare Worker to evaluate the exported fitted trees for the selected fixed held-out package. The safeguard keeps the registered batch-median preprocessing context. The outcome endpoint is not called until after the trusted-versus-degraded comparison.
 
-## Recorded fallback demo
+## Data-generated video support
 
-The website includes an `Auto-play slides` button in the Required Files section and a 75-second captioned MP4 at `demo/fallback_demo.mp4`. The MP4 is silent and can be downloaded directly from the website. If spoken narration is desired, record the script below over the same visuals.
+The website's Impact Roadmap contains one overview briefing and one briefing per experiment scenario. They are generated from `timeline.csv`, playable inside the platform, and available as pre-rendered MP4s. They support the live walkthrough; they are not presentation slides.
 
 Suggested narration:
 
@@ -43,6 +45,6 @@ Suggested narration:
 ## Failure fallback
 
 - If the API is running but a chart fails, use the eight-way results table in the Experiment card.
-- If the local service fails, use the recorded auto-demo.
-- If live inference is unavailable, use the recorded fallback, disclose that the models are pre-fitted, and show the saved machine-readable evidence plus the exact reproduction command.
+- If the local service fails, use the deployed platform and its pre-rendered roadmap videos.
+- If live inference is unavailable, play the matching scenario video, disclose that the models are pre-fitted, and show the saved machine-readable evidence plus the exact reproduction command.
 - Never switch to synthetic output without displaying the synthetic label.

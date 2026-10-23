@@ -35,7 +35,11 @@ const DOWNLOADS: Record<string, string> = {
   "data_manifest.json": "application/json; charset=utf-8",
   "modification_log.csv": "text/csv; charset=utf-8",
   "metrics_dictionary.json": "application/json; charset=utf-8",
-  "fallback_demo.mp4": "video/mp4",
+  "roadmap_readme.md": "text/markdown; charset=utf-8",
+  "roadmap-section.html": "text/html; charset=utf-8",
+  "roadmap-data.js": "application/javascript; charset=utf-8",
+  "user-report.html": "text/html; charset=utf-8",
+  "render_videos.py": "text/x-python; charset=utf-8",
 };
 
 function apiHeaders(contentType = "application/json; charset=utf-8"): HeadersInit {

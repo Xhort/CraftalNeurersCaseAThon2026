@@ -9,9 +9,6 @@ const state = {
   caseMitigated: true,
   reviewStarted: Date.now(),
   timer: null,
-  deckIndex: 0,
-  deckTimer: null,
-  autoDeck: null,
   liveCases: [],
   liveCaseIndex: 0,
   liveResults: {},
@@ -91,7 +88,7 @@ function setupNavigation() {
     menu.setAttribute("aria-expanded", String(open));
   });
   $$(".nav-link").forEach(link => link.addEventListener("click", () => nav.classList.remove("open")));
-  const sections = ["overview", "live-demo", "lab", "oversight", "docs"].map(id => document.getElementById(id));
+  const sections = ["overview", "live-demo", "lab", "oversight", "roadmap", "docs"].map(id => document.getElementById(id));
   const observer = new IntersectionObserver(entries => {
     entries.filter(entry => entry.isIntersecting).forEach(entry => {
       $$(".nav-link").forEach(link => link.classList.toggle("active", link.getAttribute("href") === `#${entry.target.id}`));
@@ -807,70 +804,27 @@ function renderMarkdown(markdown) {
   return html;
 }
 
-function presentationSlides() {
-  const finding = state.overview?.finding || {};
-  return [
-    { theme: "warning", kicker: "RESULT · NO-GO FOR DEPLOYMENT", title: "More data made delivery ETAs worse", body: "The noisy feed raised average prediction error. The safeguard helped too little and failed other readiness tests.", note: "0:00–0:35 · Lead with the measured answer and recommendation." },
-    { kicker: "THE DECISION", title: "A dispatcher needs a usable delivery ETA", body: "One complete delivery is one evaluation case. Lower error is better, but coverage and human workload count too.", note: "0:35–1:15 · Define user, prediction, consequence, unit, and metric." },
-    { kicker: "THE DATA", title: "31,415 real orders across six months", body: "One LaDe city file, kept chronological. Completion information is excluded from acceptance-time features.", stat: "31,415", note: "1:15–1:55 · State provenance, date range, split rule, and uncertainty." },
-    { kicker: "THE EXPERIMENT", title: "Four conditions × safeguard off and on", body: "Trusted, old, noisy, and combined data. Same future deliveries, three fixed seeds, 24 fitted runs.", note: "1:55–2:40 · Explain the matched design and why random shuffling would be wrong." },
-    { theme: "warning", kicker: "THE FAILURE", title: "A noisy feed adds evidence—and raises error", body: finding.headline || "The unreliable feed worsened ETA error.", stat: `+${fmt(finding.low_quality_delta || 0)} min`, note: "2:40–3:35 · Switch to the low-quality timeline and trace source share to MAE." },
-    { kicker: "LIVE AI PROOF", title: "Same delivery. Different evidence. A different ETA.", body: "Each click runs real server-side inference. The degraded scenario bundles retraining on simulated unreliable rows with matching degraded inputs for the held-out delivery.", note: "3:35–4:20 · Run trusted, degraded, and safeguarded predictions; reveal the outcome only after comparison." },
-    { theme: "dark", kicker: "THE SAFEGUARD", title: "Weight, back off, review", body: "Reduce low-trust training influence, move suspicious inputs toward safe defaults, and send risky outputs to review.", note: "4:20–5:05 · Explain that this is a bundled policy, then test it live." },
-    { kicker: "THE HONEST RESULT", title: "The safeguard helps one failure—and fails another", body: "It recovers a small amount under low-quality data, worsens combined error, and defers every stale case. No deployment claim.", note: "5:05–6:05 · Show all eight comparisons. Call out the negative result before judges do." },
-    { kicker: "HUMAN OVERSIGHT", title: "The dispatcher sees why the model deferred", body: "Evidence, data age, source reliability, prediction range, correction path, and review time are visible and logged.", note: "6:05–8:10 · Run one accept/correct/escalate walkthrough." },
-    { theme: "warning", kicker: "RECOMMENDATION", title: "Do not deploy yet", body: "Recalibrate deferral, test subgroup coverage, then run a four-week one-region shadow pilot with a go/no-go checkpoint.", note: "8:10–10:00 · Limits, owner, next action, questions." },
-  ];
-}
-
-function setupDeck() {
-  $("#launch-deck").addEventListener("click", () => openDeck(false));
-  $("#auto-demo").addEventListener("click", () => openDeck(true));
-  $("#deck-close").addEventListener("click", closeDeck);
-  $("#deck-prev").addEventListener("click", () => changeSlide(-1));
-  $("#deck-next").addEventListener("click", () => changeSlide(1));
-  document.addEventListener("keydown", event => {
-    if (!$("#deck-modal").classList.contains("open")) return;
-    if (event.key === "ArrowRight" || event.key === " ") changeSlide(1);
-    if (event.key === "ArrowLeft") changeSlide(-1);
-    if (event.key === "Escape") closeDeck();
-  });
-}
-
-function openDeck(auto) {
-  state.deckIndex = 0;
-  state.deckSeconds = 600;
-  openModal($("#deck-modal"));
-  renderSlide();
-  clearInterval(state.deckTimer);
-  state.deckTimer = setInterval(() => { state.deckSeconds = Math.max(0, state.deckSeconds - 1); const m = Math.floor(state.deckSeconds/60), s = state.deckSeconds%60; $("#deck-timer").textContent = `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`; }, 1000);
-  if (auto) {
-    toast("Fallback demo started. Slides advance automatically.");
-    clearInterval(state.autoDeck);
-    state.autoDeck = setInterval(() => { if (state.deckIndex >= 9) closeDeck(); else changeSlide(1); }, 7500);
-  }
-}
-
-function closeDeck() {
-  closeModal($("#deck-modal"));
-  clearInterval(state.deckTimer); clearInterval(state.autoDeck);
-}
-
-function changeSlide(delta) {
-  state.deckIndex = clamp(state.deckIndex + delta, 0, presentationSlides().length - 1);
-  renderSlide();
-}
-
-function renderSlide() {
-  const slides = presentationSlides(), slide = slides[state.deckIndex];
-  $("#deck-count").textContent = `${String(state.deckIndex+1).padStart(2,"0")} / ${String(slides.length).padStart(2,"0")}`;
-  $("#deck-progress").style.width = `${(state.deckIndex+1)/slides.length*100}%`;
-  $("#speaker-note").textContent = slide.note;
-  $("#deck-stage").innerHTML = `<article class="deck-slide ${slide.theme || ""}"><span class="slide-kicker">${escapeHtml(slide.kicker)}</span><h2>${escapeHtml(slide.title)}</h2><p>${escapeHtml(slide.body)}</p>${slide.stat ? `<div class="slide-stat">${escapeHtml(slide.stat)}</div>` : ""}</article>`;
+function setupRoadmapFrame() {
+  const frame = $("#roadmap-frame");
+  if (!frame) return;
+  const resize = () => {
+    try {
+      const documentHeight = frame.contentDocument?.documentElement?.scrollHeight || 0;
+      if (documentHeight) frame.style.height = `${documentHeight}px`;
+    } catch (_) {}
+  };
+  const connect = () => {
+    resize();
+    const body = frame.contentDocument?.body;
+    if (body && "ResizeObserver" in window) new ResizeObserver(resize).observe(body);
+  };
+  frame.addEventListener("load", connect);
+  if (frame.contentDocument?.readyState === "complete") connect();
+  window.addEventListener("resize", resize, { passive: true });
 }
 
 async function init() {
-  setupNavigation(); setupReveals(); setupLiveDemo(); setupUploadDemo(); setupLabControls(); setupOversight(); setupDeck();
+  setupNavigation(); setupReveals(); setupLiveDemo(); setupUploadDemo(); setupLabControls(); setupOversight(); setupRoadmapFrame();
   await resolveBackend();
   try {
     await Promise.all([loadHealth(), loadOverview(), loadComparison(), loadDocs(), loadLiveDemoCases()]);

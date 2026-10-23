@@ -24,6 +24,7 @@
       <a class="nav-link" href="#live-demo">Live AI demo</a>
       <a class="nav-link" href="#lab">Full evidence</a>
       <a class="nav-link" href="#oversight">Human review</a>
+      <a class="nav-link" href="#roadmap">Impact roadmap</a>
       <a class="nav-link" href="#docs">Documentation</a>
     </nav>
     <div class="status-pill"><span class="status-dot"></span><span id="api-status">Connecting</span></div>
@@ -315,9 +316,20 @@
       </div>
     </section>
 
+    <section class="section roadmap-host-section" id="roadmap">
+      <div class="container">
+        <div class="roadmap-host-heading reveal">
+          <div><span class="section-kicker">05 · IMPACT ROADMAP</span><h2>Live evidence,<br>not a slideshow.</h2></div>
+          <p>This walkthrough is part of the platform. Choose the overview or any experiment scenario, play its data-generated briefing, inspect the rollout gates, and open the dispatcher-facing report.</p>
+        </div>
+        <div class="walkthrough-rule reveal"><span>LIVE DEMO RULE</span><strong>The team demonstrates the working platform directly. No slide deck or slideshow is used.</strong></div>
+        <iframe class="roadmap-frame reveal" id="roadmap-frame" src="./roadmap-section.html" title="Interactive impact roadmap and scenario videos" loading="lazy"></iframe>
+      </div>
+    </section>
+
     <section class="section docs-section" id="docs">
       <div class="container">
-        <div class="docs-heading reveal"><div><span class="section-kicker">05 · REQUIRED FILES</span><h2>Methods, results,<br>and presentation.</h2></div><p>Everything the competition requests: setup, data manifest, experiment details, governance, machine-readable results, presentation mode, and a recorded fallback.</p></div>
+        <div class="docs-heading reveal"><div><span class="section-kicker">06 · SUPPORTING FILES</span><h2>Methods, results,<br>and walkthrough support.</h2></div><p>Setup, data provenance, experiment details, governance, machine-readable evidence, roadmap sources, rendered videos, and the user-facing report.</p></div>
         <div class="docs-shell reveal">
           <aside class="docs-tabs" id="docs-tabs" aria-label="Documentation pages"></aside>
           <article class="docs-content" id="docs-content"><div class="doc-loading">Loading documentation…</div></article>
@@ -332,8 +344,18 @@
           </div>
         </div>
         <div class="submission-tools reveal">
-          <div><span class="section-kicker">10-MINUTE PRESENTATION</span><h3>Present the same evidence shown above.</h3><p>Use the concise slide mode for the live presentation, or the recorded version if the demonstration cannot run.</p></div>
-          <div class="submission-actions"><button class="button button-primary" id="launch-deck">Launch presentation</button><button class="button button-ghost" id="auto-demo">Auto-play slides</button><a class="button button-ghost" href="/api/downloads/fallback_demo.mp4" data-api-path="/api/downloads/fallback_demo.mp4" download>Download fallback video</a></div>
+          <div><span class="section-kicker">LIVE WALKTHROUGH KIT</span><h3>Everything needed to demonstrate the platform live.</h3><p>Start with a real prediction, show the measured evidence, complete a dispatcher review, then use the impact roadmap for rollout gates and next steps.</p></div>
+          <div class="submission-actions"><a class="button button-primary" href="#live-demo">Start live walkthrough</a><a class="button button-ghost" href="#roadmap">Open impact roadmap</a><a class="button button-ghost" href="./user-report.html" target="_blank" rel="noopener">Open user report</a></div>
+        </div>
+        <div class="support-files reveal">
+          <div><span class="section-kicker">ROADMAP + VIDEO SOURCES</span><h3>Inspect or reuse every support file.</h3></div>
+          <div class="support-file-grid">
+            <a href="/api/downloads/roadmap_readme.md" data-api-path="/api/downloads/roadmap_readme.md" download><span>MD</span><strong>Implementation guide</strong><small>Setup and rendering instructions</small></a>
+            <a href="/api/downloads/roadmap-section.html" data-api-path="/api/downloads/roadmap-section.html" download><span>HTML</span><strong>Roadmap player</strong><small>Interactive scenario-video source</small></a>
+            <a href="/api/downloads/roadmap-data.js" data-api-path="/api/downloads/roadmap-data.js" download><span>JS</span><strong>Roadmap data</strong><small>Gates, phases, and live metrics</small></a>
+            <a href="/api/downloads/user-report.html" data-api-path="/api/downloads/user-report.html" download><span>HTML</span><strong>User report</strong><small>Dispatcher-facing explanation</small></a>
+            <a href="/api/downloads/render_videos.py" data-api-path="/api/downloads/render_videos.py" download><span>PY</span><strong>Video renderer</strong><small>Frame-exact MP4 generator</small></a>
+          </div>
         </div>
       </div>
     </section>
@@ -342,8 +364,6 @@
   <footer><div class="container footer-layout"><div class="brand inverse"><span class="brand-mark"><i></i><i></i><i></i></span><span>ETA Reliability Lab</span></div><p>Built for the William & Mary AI Club Case-A-Thon 2026 · Cloudflare-hosted live demo</p><a href="#docs">Open documentation ↑</a></div></footer>
 
   <div class="modal" id="override-modal" aria-hidden="true"><div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="override-title"><button class="modal-close" data-close-modal aria-label="Close">×</button><span class="section-kicker">DISPATCHER CORRECTION</span><h3 id="override-title">Enter a safer ETA</h3><p>The original prediction remains in the audit log.</p><label>Corrected ETA in minutes<input id="override-value" type="number" min="1" max="360" step="1"></label><label>Reason for correction<textarea id="override-note" rows="3" placeholder="What evidence changed your decision?"></textarea></label><button class="button button-primary full" id="save-override">Save correction</button></div></div>
-
-  <div class="deck-modal" id="deck-modal" aria-hidden="true"><div class="deck-toolbar"><span id="deck-count">01 / 10</span><div class="deck-progress"><i id="deck-progress"></i></div><span id="deck-timer">10:00</span><button id="deck-close">Exit ×</button></div><div class="deck-stage" id="deck-stage"></div><button class="deck-nav prev" id="deck-prev" aria-label="Previous slide">←</button><button class="deck-nav next" id="deck-next" aria-label="Next slide">→</button><div class="speaker-note" id="speaker-note"></div></div>
 
   <div class="toast" id="toast" role="status"></div>
   <script src="./lade_eta_lab/static/app.js" defer></script>

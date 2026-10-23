@@ -11,12 +11,12 @@ Setup (once):
     python -m playwright install chromium
 
 Run:
-    python render_videos.py --url http://localhost:8000/ --out videos
-    python render_videos.py --url https://antydata.com/ --out videos
+    python render_videos.py --url http://localhost:8000/roadmap-section.html --out lade_eta_lab/demo/videos
+    python render_videos.py --url https://antydata.com/roadmap-section.html --out lade_eta_lab/demo/videos
     python render_videos.py --url ... --only stale,combined     # subset
 
-Then copy the MP4s next to fallback_demo.mp4 so FastAPI serves them from
-/api/downloads/.
+The default output directory is already served by FastAPI and copied into the
+Cloudflare static bundle at /lade_eta_lab/demo/videos/.
 """
 import argparse
 import base64
@@ -41,16 +41,22 @@ def ffmpeg_exe() -> str:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--url", required=True, help="page that contains the roadmap section")
-    ap.add_argument("--out", default="videos")
+    ap.add_argument("--url", default="http://localhost:8000/roadmap-section.html",
+                    help="standalone roadmap page (default: local FastAPI route)")
+    ap.add_argument("--out", default="lade_eta_lab/demo/videos")
     ap.add_argument("--fps", type=int, default=30)
     ap.add_argument("--only", default="", help="comma-separated program ids (default: all)")
+    ap.add_argument("--chrome", default="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+                    help="installed Chrome/Chromium path; falls back to Playwright Chromium")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     ff = ffmpeg_exe()
 
     with sync_playwright() as p:
-        browser = p.chromium.launch()
+        launch = {"headless": True}
+        if a.chrome and os.path.exists(a.chrome):
+            launch["executable_path"] = a.chrome
+        browser = p.chromium.launch(**launch)
         page = browser.new_page()
         page.goto(a.url, wait_until="networkidle")
         page.wait_for_function("window.RoadmapVideo && window.RoadmapVideo.ready", timeout=30000)

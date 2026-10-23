@@ -87,7 +87,7 @@ It splits data in time order and keeps entire days together.
 
 **Use it when:** You want to understand exactly how the project damages the data.
 
-**Change it carefully:** The amount of damage must be justified in the presentation.
+**Change it carefully:** The amount of damage must be justified during the live walkthrough.
 
 ### `model.py`
 
@@ -201,7 +201,7 @@ These files are large and should not be uploaded to the repository.
 
 **Purpose:** The main results table. It shows average performance and variation across seeds.
 
-**Look here first** when deciding what numbers belong in the presentation.
+**Look here first** when deciding what numbers belong in the live walkthrough.
 
 ### `results/runs.csv`
 
@@ -256,7 +256,7 @@ You can ignore them.
 | If you want to… | Use this file |
 |---|---|
 | Run the complete experiment | `run_experiments.py` |
-| Open the presentation dashboard | `app.py` |
+| Open the live platform | `app.py` |
 | Change experiment settings | `config.py` |
 | Download or inspect data loading | `data.py` |
 | Change what the model learns from | `features.py` |
