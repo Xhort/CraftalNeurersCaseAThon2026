@@ -4,8 +4,10 @@ __pycache__/
 *.py[cod]
 data/raw/*.csv
 artifacts/*.joblib
-results/*.csv
-results/*.json
+!artifacts/reference_unmitigated.joblib
+!artifacts/low_quality_unmitigated.joblib
+!artifacts/low_quality_mitigated.joblib
+results/overrides.csv
 demo/fallback_frames/
 !data/raw/.gitkeep
 !artifacts/.gitkeep

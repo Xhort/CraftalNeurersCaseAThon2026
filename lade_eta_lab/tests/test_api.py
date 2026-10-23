@@ -184,8 +184,32 @@ def test_case_review_and_validated_decision_log(tmp_path, monkeypatch):
 
 def test_documentation_and_download_allowlist():
     docs = client.get("/api/docs").json()["documents"]
-    assert len(docs) >= 8
+    assert len(docs) >= 9
     assert client.get("/api/docs/method").status_code == 200
+    assert client.get("/api/docs/deployment").status_code == 200
     assert client.get("/api/downloads/data_manifest.json").status_code == 200
     assert client.get("/demo/fallback_demo.mp4").status_code == 200
     assert client.get("/api/downloads/../../data/raw/delivery_jl.csv").status_code == 404
+
+
+def test_online_bundle_works_without_the_raw_source(tmp_path, monkeypatch):
+    monkeypatch.setattr(webapp, "DATA_DIR", tmp_path)
+    webapp._data_profile.cache_clear()
+    webapp._live_demo_frames.cache_clear()
+
+    overview = client.get("/api/overview")
+    assert overview.status_code == 200
+    assert overview.json()["profile"]["source_rows"] == 31_415
+    assert overview.json()["profile"]["profile_source"] == "published experiment manifest"
+
+    cases = client.get("/api/live-demo/cases")
+    assert cases.status_code == 200
+    prediction = client.post(
+        "/api/live-demo/predict",
+        json={"package_id": cases.json()["cases"][0]["package_id"], "scenario": "poisoned"},
+    )
+    assert prediction.status_code == 200
+    assert prediction.json()["model"]["prediction_computed_live_on_request"] is True
+
+    webapp._data_profile.cache_clear()
+    webapp._live_demo_frames.cache_clear()

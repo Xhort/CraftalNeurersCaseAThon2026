@@ -22,9 +22,11 @@ FastAPI live inference · blind outcome reveal · evidence · decision endpoints
 Live AI comparison · experiment lab · dispatcher review · docs · presentation
 ```
 
-## Backend boundary
+## Online service boundary
 
-FastAPI reads saved experiment artifacts and exposes narrow JSON endpoints. It does not send source data to external services. A dispatcher action is appended to `results/overrides.csv` under a process lock.
+Cloudflare Workers Static Assets serves the browser interface at `antydata.com`. Same-origin requests under `/api/*` go through a Worker to a single Cloudflare Container running FastAPI. The container has no outbound internet access and reads only the bundled fitted models, held-out inference features, and published experiment results.
+
+In production, the Worker validates a dispatcher action through FastAPI and then stores the returned record in Durable Object storage. Reads and the `overrides.csv` download come from that durable store. In local FastAPI development, the same validated action is appended to `results/overrides.csv` under a process lock.
 
 For the live AI comparison, FastAPI recreates the seed-17 chronological held-out frames, loads the corresponding fitted `FittedETA` artifact, and recalculates predictions over the full fixed evaluation batch. Only the selected package is returned. Full-batch scoring preserves the stable median context currently used by safeguard preprocessing; scoring a single row would not reproduce the registered experiment. The models are fitted beforehand, but prediction is computed on every request.
 
@@ -34,7 +36,7 @@ Case discovery and prediction responses omit the outcome. A separate reveal endp
 
 ## Data boundary
 
-The raw LaDe CSV and fitted model files are local and ignored by Git. Machine-readable evidence contains aggregate results plus evaluation-case predictions required for the local walkthrough. Public deployment would require a separate decision about dataset rights, authentication, durable storage, audit retention, and access control.
+The raw LaDe CSV remains local and ignored by Git because the applicable redistribution terms must be resolved. Production contains three team-created fitted model files, the published machine-readable evidence, and compressed feature-only copies of the fixed 3,407-row evaluation inputs. The runtime bundle is enough to recalculate the live demo but not to reproduce model training from the third-party source.
 
 ## Reproducibility controls
 
@@ -47,8 +49,8 @@ The raw LaDe CSV and fitted model files are local and ignored by Git. Machine-re
 - Tests for feature plausibility, split isolation, fixed cases, model fitting, APIs, and decision validation.
 - Live-inference tests that match the registered saved predictions, verify real `.predict()` calls, hide the target before reveal, and reject unpublished cases.
 
-## Local service
+## Service modes
 
-The service runs with `uvicorn app:app --reload` and serves both the API and the static interface. OpenAPI documentation is generated automatically at `/docs`.
+For local model work, FastAPI runs with `uvicorn app:app --reload` and serves both the API and interface. OpenAPI documentation is generated automatically at `/docs`.
 
-This local architecture is appropriate for the competition artifact. Moving online would require authenticated users, a database-backed decision log, encrypted storage, rate limits, monitoring, and an explicit data-license review.
+For production, `wrangler deploy` builds the static asset bundle and the Linux FastAPI container. The container sleeps after 15 idle minutes; the edge-hosted interface remains available during a cold start. Cloudflare observability is enabled, and the human-review log uses persistent Durable Object storage. Authentication, retention policy, and an explicit data-license review are still required before using this beyond a public competition demonstration.

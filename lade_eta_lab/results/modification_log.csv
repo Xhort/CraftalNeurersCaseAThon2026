@@ -1,0 +1,5 @@
+condition,stage,changed_fields,timing,severity,source_mix,seeds,plausible_failure
+reference,none,none,none,none,100% trusted,"17|29|43",Untouched comparison
+stale,live_input,"area_historical_eta|data_age_days",After training boundary,"age grows through evaluation",100% primary,"17|29|43",Area-statistics refresh job stops
+low_quality,retraining_and_live_input,"duration_minutes|distance_km|area_historical_eta|source_reliability|low_quality_share",Training duplication and increasing evaluation corruption,"low reliability 0.25",55% maximum unreliable feed,"17|29|43",Fast unreliable source outweighs slower trusted source
+combined,retraining_and_live_input,"all stale and low-quality fields",Both failures together,"same component severities",55% maximum unreliable feed,"17|29|43",Refresh failure and unreliable feed coincide

@@ -1,0 +1,36 @@
+{
+  "dataset": "LaDe last-mile delivery dataset",
+  "publisher": "Cainiao-AI",
+  "source_url": "https://huggingface.co/datasets/Cainiao-AI/LaDe",
+  "retrieval_date": "2026-10-17",
+  "selected_file": "delivery/delivery_jl.csv",
+  "local_sha256": "12e2cf4664dd5b4475d39dddee8872f5a03b3082f08f0eece7f103baee6c6e73",
+  "city": "Jilin",
+  "source_rows": 31415,
+  "independent_cases": 31415,
+  "rows_after_filters": 27431,
+  "excluded_rows": 3984,
+  "date_range": {
+    "start": "2020-05-12",
+    "end": "2020-10-26"
+  },
+  "split": {
+    "method": "chronological whole service days",
+    "training": {"rows": 16863, "days": 96, "start": "2020-05-12", "end": "2020-08-17"},
+    "validation": {"rows": 7161, "days": 32, "start": "2020-08-18", "end": "2020-09-18"},
+    "evaluation": {"rows": 3407, "days": 33, "start": "2020-09-19", "end": "2020-10-26"}
+  },
+  "filters": [
+    "acceptance and delivery times must parse",
+    "delivery duration must be between 1 and 360 minutes"
+  ],
+  "missing_value_treatment": "Distance falls back to zero when acceptance GPS is absent; remaining numeric inputs use training median imputation.",
+  "rights": {
+    "repository_metadata": "Apache-2.0",
+    "author_paper": "CC BY-NC 4.0",
+    "status": "Resolve controlling terms before public redistribution",
+    "raw_data_redistributed": false
+  },
+  "data_mode": "LaDe",
+  "reference_file_modified": false
+}

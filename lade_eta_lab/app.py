@@ -43,6 +43,7 @@ DEMO_DIR = PROJECT_DIR / "demo"
 OVERRIDES_PATH = RESULTS_DIR / "overrides.csv"
 DOCS = {
     "setup": PROJECT_DIR / "README.md",
+    "deployment": PROJECT_DIR / "CLOUDFLARE_DEPLOYMENT.md",
     "method": PROJECT_DIR / "EXPERIMENT_CARD.md",
     "data": PROJECT_DIR / "DATA_MANIFEST.md",
     "governance": PROJECT_DIR / "GOVERNANCE.md",
@@ -130,7 +131,26 @@ def _read_csv(name: str) -> pd.DataFrame:
 def _data_profile() -> dict[str, object]:
     path = DATA_DIR / "delivery_jl.csv"
     if not path.exists():
-        return {"available": False}
+        manifest_path = RESULTS_DIR / "data_manifest.json"
+        if not manifest_path.exists():
+            return {"available": False}
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        date_range = manifest.get("date_range", {})
+        return {
+            "available": True,
+            "dataset": manifest.get("dataset", "LaDe delivery data"),
+            "city": manifest.get("city", "Jilin"),
+            "source_rows": int(manifest.get("source_rows", 0)),
+            "independent_cases": int(manifest.get("independent_cases", 0)),
+            "rows_after_filters": int(manifest.get("rows_after_filters", 0)),
+            "date_start": date_range.get("start"),
+            "date_end": date_range.get("end"),
+            "missing_accept_gps_rate": manifest.get("missing_accept_gps_rate"),
+            "raw_data_redistributed": bool(
+                manifest.get("rights", {}).get("raw_data_redistributed", False)
+            ),
+            "profile_source": "published experiment manifest",
+        }
     frame = load_delivery_csv(path)
     prepared = prepare_features(frame)
     return {
@@ -212,9 +232,21 @@ _LIVE_SIGNALS = (
 @lru_cache(maxsize=1)
 def _live_demo_frames() -> tuple[pd.DataFrame, pd.DataFrame]:
     """Recreate the fixed clean and noisy held-out inputs used by the artifacts."""
+    runtime_dir = PROJECT_DIR / "runtime"
+    clean_path = runtime_dir / "live_clean.csv.gz"
+    poisoned_path = runtime_dir / "live_poisoned.csv.gz"
+    if clean_path.exists() and poisoned_path.exists():
+        parse_dates = ["service_date", "accept_ts"]
+        clean = pd.read_csv(clean_path, parse_dates=parse_dates)
+        poisoned = pd.read_csv(poisoned_path, parse_dates=parse_dates)
+        return clean, poisoned
+
     path = DATA_DIR / "delivery_jl.csv"
     if not path.exists():
-        raise HTTPException(503, "The measured LaDe data is unavailable for live inference.")
+        raise HTTPException(
+            503,
+            "The deployment bundle for measured LaDe live inference is unavailable.",
+        )
     prepared = prepare_features(load_delivery_csv(path))
     train, validation, clean_test = chronological_split(
         prepared,
@@ -644,6 +676,7 @@ def preview_experiment(request: PreviewRequest) -> dict[str, object]:
 def docs_index() -> dict[str, object]:
     labels = {
         "setup": "Setup and reproducibility",
+        "deployment": "Online deployment",
         "method": "Experiment card",
         "data": "Data manifest",
         "governance": "Governance",

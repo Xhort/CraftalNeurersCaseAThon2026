@@ -1,6 +1,6 @@
 # API reference
 
-The local API is available at `http://127.0.0.1:8000`. FastAPI’s interactive OpenAPI page is at `/docs`.
+The production API is available at `https://antydata.com/api/*`. The local API is available at `http://127.0.0.1:8000`. FastAPI’s interactive OpenAPI page is available at `/docs` when running FastAPI directly.
 
 ## Evidence endpoints
 
@@ -40,9 +40,11 @@ The `poisoned` scenario is the full low-quality condition: the model was fitted 
 | Method and path | Purpose |
 |---|---|
 | `POST /api/decisions` | Validate and append an accept, override, or escalation action |
-| `GET /api/decisions` | Read recent local demonstration actions |
+| `GET /api/decisions` | Read recent demonstration actions |
 
 An override requires a corrected ETA from 1 to 360 minutes. Accept and escalate actions must not include a corrected ETA. Each record stores the original model ETA, reviewer label, note, and human review seconds.
+
+In production, the Cloudflare Worker stores these records in Durable Object storage and generates the `overrides.csv` download from the same store. In local development, FastAPI stores them in `results/overrides.csv`.
 
 ## Preview endpoint
 

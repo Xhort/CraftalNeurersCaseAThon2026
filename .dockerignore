@@ -1,0 +1,12 @@
+.git
+.gitignore
+.DS_Store
+dist
+node_modules
+.wrangler
+lade_eta_lab/.venv
+lade_eta_lab/.pytest_cache
+lade_eta_lab/**/__pycache__
+lade_eta_lab/data/raw/*.csv
+lade_eta_lab/results/overrides.csv
+lade_eta_lab/demo/fallback_frames

@@ -1,0 +1,38 @@
+{
+  "mae_minutes": {
+    "label": "Mean absolute error",
+    "unit": "minutes",
+    "direction": "lower is better",
+    "definition": "Average absolute difference between actual and predicted delivery duration."
+  },
+  "rmse_minutes": {
+    "label": "Root mean squared error",
+    "unit": "minutes",
+    "direction": "lower is better",
+    "definition": "Square root of mean squared error; gives larger misses more influence."
+  },
+  "over_15_minutes_rate": {
+    "label": "More than 15 minutes wrong",
+    "unit": "share of evaluation cases",
+    "direction": "lower is better",
+    "definition": "Share of ETA predictions with absolute error greater than 15 minutes."
+  },
+  "deferred_rate": {
+    "label": "Human review rate",
+    "unit": "share of evaluation cases",
+    "direction": "context dependent; must be reported with accuracy and coverage",
+    "definition": "Share of predictions withheld for dispatcher review by the configured risk rule."
+  },
+  "coverage": {
+    "label": "Automatic output coverage",
+    "unit": "share of evaluation cases",
+    "direction": "higher is useful only when accuracy remains acceptable",
+    "definition": "One minus the deferred rate."
+  },
+  "n_test": {
+    "label": "Evaluation cases",
+    "unit": "orders",
+    "direction": "not an optimization metric",
+    "definition": "Number of complete delivery orders in the fixed evaluation set."
+  }
+}

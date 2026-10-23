@@ -1,6 +1,6 @@
 # LaDe ETA Reliability Lab
 
-This is the complete local Case-A-Thon artifact for the prompt on unintentional data poisoning. It predicts delivery duration, isolates stale and low-quality data, compares a transparent countermeasure on the same future orders, and gives a dispatcher an evidence-based correction path.
+This is the complete Case-A-Thon artifact for the prompt on unintentional data poisoning. It predicts delivery duration, isolates stale and low-quality data, compares a transparent countermeasure on the same future orders, and gives a dispatcher an evidence-based correction path. It runs locally with FastAPI and online at `antydata.com` through a Cloudflare Worker and Container.
 
 The website is intentionally written for a nontechnical audience. Technical details, machine-readable results, limitations, and governance records remain available in the Documentation section.
 
@@ -13,6 +13,15 @@ The website is intentionally written for a nontechnical audience. Technical deta
 | Website | Plain-language conclusion, three-step live AI prediction, full experiment controls, mechanism trace, dispatcher walkthrough, documentation tabs, and a 10-minute presentation mode |
 | Evidence package | Run-level and daily CSV files, data manifest, modification log, metric dictionary, governance plan, and AI-use disclosure |
 | Fallback demo | A 75-second captioned MP4 plus reproducible capture and build scripts |
+| Online deployment | Edge-hosted static site, containerized FastAPI/scikit-learn inference, and durable review decisions |
+
+## Run online
+
+The repository includes `wrangler.jsonc`, a Worker router, a production Dockerfile,
+and a static build script. Cloudflare Workers Builds should use `npm run build`
+as the build command and `npx wrangler deploy` as the deploy command. See
+`CLOUDFLARE_DEPLOYMENT.md` for the one-time account settings and verification
+steps.
 
 ## Run locally
 
