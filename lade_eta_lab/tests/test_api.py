@@ -16,7 +16,10 @@ def test_health_and_overview_use_measured_results():
     assert "ETA Reliability Lab" not in website.text
     assert client.get("/lade_eta_lab/static/antydata-logo.png").status_code == 200
     assert 'id="data-review-console"' in website.text
-    assert website.text.count('class="data-review-tab') == 3
+    assert website.text.count('id="review-tab-') == 5
+    assert 'id="review-decision-form"' in website.text
+    assert 'id="review-audit-list"' in website.text
+    assert "27,431 / 27,431 usable records assigned" in website.text
     assert "review_preview_alerts.png" not in website.text
     assert "/api/downloads/review_layer.zip" in website.text
     video_preview = client.get("/support/PREVIEW_split_with_music_sample_data.mp4")
@@ -245,6 +248,43 @@ def test_case_review_and_validated_decision_log(tmp_path, monkeypatch):
         },
     )
     assert invalid.status_code == 422
+
+
+def test_item_level_data_review_uses_server_derived_evidence(tmp_path, monkeypatch):
+    temporary_log = tmp_path / "data_review_log.jsonl"
+    monkeypatch.setattr(webapp, "DATA_REVIEW_LOG_PATH", temporary_log)
+    package_id = client.get("/api/live-demo/cases").json()["cases"][0]["package_id"]
+    evidence = client.post(
+        "/api/live-demo/predict",
+        json={"package_id": package_id, "scenario": "safeguarded"},
+    ).json()
+    changed = [signal for signal in evidence["input_signals"] if signal["changed_by_poisoning"]]
+    decisions = [
+        {"key": signal["key"], "action": "accept" if index == 0 else "reject"}
+        for index, signal in enumerate(changed)
+    ]
+    payload = {
+        "batch_id": "lade-low-quality-seeds-17-29-43",
+        "package_id": package_id,
+        "reviewer": "Test reviewer",
+        "finding": "Only the first measured change is supported by the review evidence.",
+        "acknowledge_critical_risk": True,
+        "review_seconds": 31,
+        "decisions": decisions,
+    }
+    saved = client.post("/api/data-reviews", json=payload)
+    assert saved.status_code == 201
+    review = saved.json()["review"]
+    assert review["verdict"] == "partially_approved"
+    assert review["total_changed_signals"] == len(changed)
+    assert review["evidence"]["synthetic"] is False
+    assert review["items"][0]["proposed_value"] == changed[0]["poisoned_value"]
+    assert review["items"][0]["approved_value"] == changed[0]["poisoned_value"]
+    assert review["items"][1]["approved_value"] == changed[1]["clean_value"]
+    assert client.get("/api/data-reviews").json()["records"][0]["reviewer"] == "Test reviewer"
+
+    payload["acknowledge_critical_risk"] = False
+    assert client.post("/api/data-reviews", json=payload).status_code == 422
 
 
 def test_documentation_and_download_allowlist():

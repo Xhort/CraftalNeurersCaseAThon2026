@@ -160,6 +160,7 @@
             </div>
 
             <p class="live-model-caveat"><strong>What is live?</strong> Training happened beforehand for speed and repeatability. Every button evaluates the exported fitted trees on the selected held-out delivery in the online Worker. The real outcome is never a model input.</p>
+            <div class="data-coverage" aria-label="Experiment data coverage"><strong>27,431 / 27,431 usable records assigned</strong><span>16,863 train · 7,161 validation · 3,407 held-out evaluation · 24 matched runs</span><small>The test rows stay out of training so the score measures unseen deliveries.</small></div>
           </div>
         </div>
 
@@ -179,7 +180,7 @@
                 <input id="upload-data-input" type="file" accept=".csv,text/csv">
                 <span class="upload-icon" aria-hidden="true">⇧</span>
                 <strong>Drop a CSV here or choose a file</strong>
-                <small>Up to 50 rows · CSV only · 2 MB maximum</small>
+                <small>Up to 1,000 rows · CSV only · 2 MB maximum</small>
               </label>
               <div class="upload-schema-note">
                 <strong>Required prepared fields</strong>
@@ -313,33 +314,42 @@
             <div class="review-layer-copy"><p>This console reads the measured experiment evidence—not example screenshots. Review the registered failure, compare a real held-out delivery before and after degradation, and see why the current safeguard remains a no-go.</p><a class="review-source-link" href="/api/downloads/modification_log.csv" data-api-path="/api/downloads/modification_log.csv" download>Download modification log <span>CSV ↓</span></a></div>
           </div>
           <div class="data-review-console" id="data-review-console">
-            <div class="data-review-topbar"><div><span class="review-live-dot"></span><strong>Measured LaDe experiment</strong><small id="review-batch-label">Loading evidence…</small></div><span class="review-verdict">NOT APPROVED FOR DEPLOYMENT</span></div>
+            <div class="data-review-topbar"><div><span class="review-live-dot"></span><strong>Measured LaDe experiment</strong><small id="review-batch-label">Loading evidence…</small></div><span class="review-verdict" id="review-verdict">AWAITING REVIEW</span></div>
             <div class="data-review-stats" aria-label="Review batch summary">
               <div><span>SOURCE RECORDS</span><strong id="review-source-rows">31,415</strong><small>LaDe · Jilin</small></div>
-              <div><span>FIXED EVALUATION SET</span><strong id="review-eval-rows">3,407</strong><small>same future deliveries</small></div>
-              <div><span>UNRELIABLE FEED</span><strong id="review-feed-share">55%</strong><small>maximum evidence share</small></div>
-              <div><span>RECORDED TRUST</span><strong id="review-source-trust">25%</strong><small>unreliable-source score</small></div>
+              <div><span>USABLE RECORDS</span><strong>27,431</strong><small>all assigned to a split</small></div>
+              <div><span>HELD-OUT TEST</span><strong id="review-eval-rows">3,407</strong><small>never used for fitting</small></div>
+              <div><span>REVIEW PROGRESS</span><strong id="review-progress-count">0 / 0</strong><small id="review-progress-label">changed signals</small></div>
             </div>
+            <div class="review-progress-track" aria-hidden="true"><i id="review-progress-bar"></i></div>
             <div class="data-review-tabs" role="tablist" aria-label="Data approval evidence">
               <button class="data-review-tab active" role="tab" aria-selected="true" aria-controls="review-panel-alerts" id="review-tab-alerts" data-review-panel="alerts">1 · Alerts</button>
-              <button class="data-review-tab" role="tab" aria-selected="false" aria-controls="review-panel-data" id="review-tab-data" data-review-panel="data" tabindex="-1">2 · Changed data</button>
-              <button class="data-review-tab" role="tab" aria-selected="false" aria-controls="review-panel-decision" id="review-tab-decision" data-review-panel="decision" tabindex="-1">3 · Decision</button>
+              <button class="data-review-tab" role="tab" aria-selected="false" aria-controls="review-panel-changes" id="review-tab-changes" data-review-panel="changes" tabindex="-1">2 · Change log</button>
+              <button class="data-review-tab" role="tab" aria-selected="false" aria-controls="review-panel-data" id="review-tab-data" data-review-panel="data" tabindex="-1">3 · Data</button>
+              <button class="data-review-tab" role="tab" aria-selected="false" aria-controls="review-panel-decision" id="review-tab-decision" data-review-panel="decision" tabindex="-1">4 · Decision</button>
+              <button class="data-review-tab" role="tab" aria-selected="false" aria-controls="review-panel-audit" id="review-tab-audit" data-review-panel="audit" tabindex="-1">5 · Audit trail</button>
             </div>
             <div class="data-review-panel active" id="review-panel-alerts" role="tabpanel" aria-labelledby="review-tab-alerts">
               <div class="review-alert critical"><span>CRITICAL</span><div><strong>Unreliable volume outweighs trusted evidence</strong><p id="review-alert-volume">The registered low-quality feed reaches 55% of training evidence.</p></div></div>
               <div class="review-alert"><span>TRACE</span><div><strong>Training and live inputs both changed</strong><p id="review-alert-fields">Loading the registered changed fields…</p></div></div>
               <div class="review-alert"><span>CONTROL</span><div><strong>The comparison stays matched</strong><p>Package IDs and actual delivery outcomes remain fixed across trusted, degraded, and safeguarded conditions.</p></div></div>
+              <div class="review-alert"><span>RESULT</span><div><strong>Full readiness check is still a no-go</strong><p id="review-alert-result">Loading measured experiment errors…</p></div></div>
+            </div>
+            <div class="data-review-panel" id="review-panel-changes" role="tabpanel" aria-labelledby="review-tab-changes" hidden>
+              <div class="review-panel-heading"><div><span>REGISTERED MODIFICATION LOG</span><strong>Choose whether each proposed change is acceptable.</strong></div><p>Accept keeps the changed value. Reject restores the trusted value. The safeguard column remains visible as the automated recommendation.</p></div>
+              <div class="review-change-list" id="review-change-list"><p>Loading measured changes…</p></div>
             </div>
             <div class="data-review-panel" id="review-panel-data" role="tabpanel" aria-labelledby="review-tab-data" hidden>
               <div class="review-panel-heading"><div><span>REAL HELD-OUT DELIVERY</span><strong id="review-case-label">Loading comparison…</strong></div><p>Only fields changed by the registered low-quality intervention are shown. The actual delivery duration remains hidden from the model.</p></div>
-              <div class="review-table-wrap"><table class="review-data-table"><thead><tr><th>Input used by the AI</th><th>Trusted value</th><th>After unreliable feed</th><th>Safeguard used</th><th>Review</th></tr></thead><tbody id="review-data-body"><tr><td colspan="5">Loading measured values…</td></tr></tbody></table></div>
+              <div class="review-table-wrap"><table class="review-data-table"><thead><tr><th>Input used by the AI</th><th>Trusted</th><th>Proposed</th><th>Safeguard</th><th>Approved</th><th>Human action</th></tr></thead><tbody id="review-data-body"><tr><td colspan="6">Loading measured values…</td></tr></tbody></table></div>
             </div>
             <div class="data-review-panel" id="review-panel-decision" role="tabpanel" aria-labelledby="review-tab-decision" hidden>
               <div class="review-decision-grid">
-                <div class="review-decision-copy"><span class="review-decision-status">NO-GO</span><h4>Do not deploy this safeguard yet.</h4><p>The low-quality test improves slightly with the safeguard, but the full readiness check fails: combined-condition error gets worse and the policy defers every stale and combined case.</p><a href="/api/downloads/summary.csv" data-api-path="/api/downloads/summary.csv" download>Download measured results →</a></div>
-                <div class="review-decision-metrics"><div><span>TRUSTED ERROR</span><strong id="review-mae-trusted">—</strong><small>mean absolute error</small></div><div><span>AFTER BAD DATA</span><strong id="review-mae-poisoned">—</strong><small>mean absolute error</small></div><div><span>WITH SAFEGUARD</span><strong id="review-mae-safe">—</strong><small>mean absolute error</small></div><div><span>COMBINED TEST</span><strong id="review-mae-combined">—</strong><small>safeguard on</small></div></div>
+                <div class="review-decision-copy"><span class="review-decision-status" id="review-decision-status">INCOMPLETE</span><h4 id="review-decision-title">Review every changed signal.</h4><p><strong id="review-accepted-count">0 accepted</strong> · <strong id="review-rejected-count">0 rejected</strong></p><p>This approval records a human data decision. It does not retrain the published model or change the competition results.</p><a href="/api/downloads/summary.csv" data-api-path="/api/downloads/summary.csv" download>Download measured results →</a></div>
+                <form class="review-decision-form" id="review-decision-form"><label>Reviewer name<input id="reviewer-name" maxlength="80" value="Demo reviewer" required></label><label>Finding<textarea id="review-finding" minlength="10" maxlength="500" rows="4" placeholder="Explain why these changes should be accepted or rejected." required></textarea></label><label class="review-ack"><input id="review-risk-ack" type="checkbox" required><span>I acknowledge the critical unreliable-feed warning and reviewed all changed signals.</span></label><div class="review-form-actions"><button type="button" class="review-reset" id="review-reset">Reset review</button><button type="submit" class="review-submit" id="review-submit" disabled>Submit signed decision</button></div></form>
               </div>
             </div>
+            <div class="data-review-panel" id="review-panel-audit" role="tabpanel" aria-labelledby="review-tab-audit" hidden><div class="review-panel-heading"><div><span>PERSISTED REVIEW RECORDS</span><strong>Who decided what, and when.</strong></div><p>Values in each record are derived server-side from the measured held-out evidence.</p></div><div class="review-audit-list" id="review-audit-list"><p>No review decisions recorded yet.</p></div></div>
           </div>
         </div>
       </div>

@@ -93,7 +93,7 @@ Training is performed ahead of the live walkthrough so the interaction is fast a
 
 The low-quality scenario is an **end-to-end scenario**, not an attribution test: it bundles simulated corruption of duplicated training rows with controlled changes to selected evaluation inputs. The four selectable cases are disclosed teaching examples, including a counterexample. They do not replace the aggregate conclusion from 3,407 held-out deliveries and 24 matched runs.
 
-The upload panel accepts up to 50 prepared feature rows and runs every row through the same three fitted artifacts. A downloadable sample shows the accepted schema. For uploaded rows, the degraded comparison uses a disclosed deterministic version of the low-quality profile (`distance_km × 1.42`, `area_historical_eta + 10`, source reliability `0.25`, and unreliable-feed share `0.55`). Optional `duration_minutes` values are withheld from model inputs and used only to report retrospective error.
+The upload panel accepts up to 1,000 prepared feature rows and runs every row through the same three fitted artifacts. A downloadable sample shows the accepted schema. For uploaded rows, the degraded comparison uses a disclosed deterministic version of the low-quality profile (`distance_km × 1.42`, `area_historical_eta + 10`, source reliability `0.25`, and unreliable-feed share `0.55`). Optional `duration_minutes` values are withheld from model inputs and used only to report retrospective error.
 
 ## Current measured conclusion
 

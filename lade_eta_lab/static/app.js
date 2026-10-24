@@ -18,6 +18,7 @@ const state = {
   uploadRows: [],
   uploadFileName: "",
   uploadRunning: false,
+  dataReview: { signals: [], decisions: {}, packageId: "", started: Date.now(), saving: false },
 };
 
 let API_BASE = "";
@@ -39,7 +40,8 @@ async function api(path, options = {}) {
   }
   const cacheable = method === "GET"
     && path !== "/api/health"
-    && !path.startsWith("/api/decisions");
+    && !path.startsWith("/api/decisions")
+    && !path.startsWith("/api/data-reviews");
   const cacheKey = `${API_BASE}${path}`;
   if (cacheable && requestCache.has(cacheKey)) return requestCache.get(cacheKey);
 
@@ -69,7 +71,8 @@ async function apiText(path) {
 
 function resolveBackend() {
   const localHost = ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
-  if (window.location.protocol === "file:" || (localHost && window.location.port !== "8000")) {
+  const localStaticPreview = localHost && !["8000", "8787"].includes(window.location.port);
+  if (window.location.protocol === "file:" || localStaticPreview) {
     API_BASE = "http://127.0.0.1:8000";
   } else {
     API_BASE = "";
@@ -520,7 +523,7 @@ function renderUploadPreview() {
 async function loadUploadFile(file) {
   if (!file) return;
   if (file.size > 2 * 1024 * 1024) {
-    setUploadStatus("FILE REJECTED", "The CSV is larger than 2 MB.", "Choose a smaller prepared export with no more than 50 rows.", true);
+    setUploadStatus("FILE REJECTED", "The CSV is larger than 2 MB.", "Choose a smaller prepared export with no more than 1,000 rows.", true);
     return;
   }
   try {
@@ -529,7 +532,7 @@ async function loadUploadFile(file) {
     const headers = parsed[0].map(header => header.replace(/^\uFEFF/, "").trim().toLowerCase());
     const missing = UPLOAD_REQUIRED_FIELDS.filter(field => !headers.includes(field));
     if (missing.length) throw new Error(`Missing required columns: ${missing.join(", ")}.`);
-    if (parsed.length - 1 > 50) throw new Error("This live demo accepts up to 50 rows per upload.");
+    if (parsed.length - 1 > 1000) throw new Error("This live demo accepts up to 1,000 rows per upload.");
     const numberFields = [...UPLOAD_REQUIRED_FIELDS, "duration_minutes"];
     const rows = parsed.slice(1).map((values, index) => {
       const row = Object.fromEntries(headers.map((header, column) => [header, values[column] ?? ""]));
@@ -850,6 +853,16 @@ function setupDataReview() {
       tabs[next].focus();
     });
   });
+  $("#data-review-console").addEventListener("click", event => {
+    const action = event.target.closest("[data-review-action]");
+    if (action) setDataReviewAction(action.dataset.reviewKey, action.dataset.reviewAction);
+  });
+  $("#review-decision-form").addEventListener("submit", submitDataReview);
+  $("#review-reset").addEventListener("click", resetDataReview);
+  ["#reviewer-name", "#review-finding", "#review-risk-ack"].forEach(selector => {
+    $(selector).addEventListener("input", renderDataReview);
+    $(selector).addEventListener("change", renderDataReview);
+  });
 }
 
 function reviewValue(value, unit) {
@@ -868,8 +881,6 @@ async function loadDataReview() {
   if (!lowQuality) throw new Error("The registered low-quality condition is missing.");
 
   $("#review-batch-label").textContent = `registered seeds ${lowQuality.seeds.replaceAll("|", ", ")}`;
-  $("#review-feed-share").textContent = lowQuality.source_mix.match(/\d+%/)?.[0] || "55%";
-  $("#review-source-trust").textContent = `${fmt(Number(lowQuality.severity.match(/[\d.]+/)?.[0] || .25) * 100, 0)}%`;
   $("#review-alert-volume").textContent = `The registered low-quality feed reaches ${lowQuality.source_mix.toLowerCase()} and represents: ${lowQuality.plausible_failure.toLowerCase()}.`;
   $("#review-alert-fields").textContent = `Registered fields: ${lowQuality.changed_fields.replaceAll("|", ", ").replaceAll("_", " ")}.`;
 
@@ -880,20 +891,112 @@ async function loadDataReview() {
     body: JSON.stringify({ package_id: item.package_id, scenario: "safeguarded" }),
   });
   const signals = result.input_signals.filter(signal => signal.changed_by_poisoning);
+  state.dataReview = {
+    signals,
+    decisions: {},
+    packageId: String(item.package_id),
+    started: Date.now(),
+    saving: false,
+  };
   $("#review-case-label").textContent = `${item.label} · package ${item.package_id}`;
-  $("#review-data-body").innerHTML = signals.map(signal => `<tr>
-    <td><strong>${escapeHtml(signal.label)}</strong><small>${escapeHtml(signal.key)}</small></td>
-    <td>${reviewValue(signal.clean_value, signal.unit)}</td>
-    <td class="changed-value">${reviewValue(signal.poisoned_value, signal.unit)}</td>
-    <td class="safe-value">${reviewValue(signal.value_used_by_selected_scenario, signal.unit)}</td>
-    <td><span class="review-data-status">${signal.adjusted_by_safeguard ? "ADJUSTED" : "DISCLOSED"}</span></td>
-  </tr>`).join("") || '<tr><td colspan="5">No changed inputs were recorded for this case.</td></tr>';
 
   const summary = (condition, mitigated) => state.comparison.find(row => row.condition === condition && row.mitigated === mitigated);
-  $("#review-mae-trusted").textContent = `${fmt(summary("reference", false).mae_minutes_mean)} min`;
-  $("#review-mae-poisoned").textContent = `${fmt(summary("low_quality", false).mae_minutes_mean)} min`;
-  $("#review-mae-safe").textContent = `${fmt(summary("low_quality", true).mae_minutes_mean)} min`;
-  $("#review-mae-combined").textContent = `${fmt(summary("combined", true).mae_minutes_mean)} min`;
+  $("#review-alert-result").textContent = `Measured MAE: ${fmt(summary("reference", false).mae_minutes_mean)} min trusted, ${fmt(summary("low_quality", false).mae_minutes_mean)} min after bad data, ${fmt(summary("low_quality", true).mae_minutes_mean)} min with the safeguard, and ${fmt(summary("combined", true).mae_minutes_mean)} min in the combined safeguarded test.`;
+  renderDataReview();
+  await loadDataReviewAudit();
+}
+
+function reviewActionButtons(signal, compact = false) {
+  const selected = state.dataReview.decisions[signal.key];
+  return `<div class="review-actions${compact ? " compact" : ""}">
+    <button type="button" class="review-action accept${selected === "accept" ? " active" : ""}" data-review-key="${escapeHtml(signal.key)}" data-review-action="accept" aria-pressed="${selected === "accept"}">Accept</button>
+    <button type="button" class="review-action reject${selected === "reject" ? " active" : ""}" data-review-key="${escapeHtml(signal.key)}" data-review-action="reject" aria-pressed="${selected === "reject"}">Reject</button>
+  </div>`;
+}
+
+function renderDataReview() {
+  const { signals, decisions, saving } = state.dataReview;
+  const reviewed = signals.filter(signal => decisions[signal.key]).length;
+  const accepted = signals.filter(signal => decisions[signal.key] === "accept").length;
+  const rejected = signals.filter(signal => decisions[signal.key] === "reject").length;
+  const complete = signals.length > 0 && reviewed === signals.length;
+  $("#review-progress-count").textContent = `${reviewed} / ${signals.length}`;
+  $("#review-progress-label").textContent = complete ? "all changes reviewed" : "changed signals";
+  $("#review-progress-bar").style.width = `${signals.length ? reviewed / signals.length * 100 : 0}%`;
+  $("#review-accepted-count").textContent = `${accepted} accepted`;
+  $("#review-rejected-count").textContent = `${rejected} rejected`;
+  $("#review-decision-status").textContent = complete ? (accepted && rejected ? "PARTIAL" : rejected ? "REJECTED" : "APPROVED") : "INCOMPLETE";
+  $("#review-decision-title").textContent = complete ? "The item decisions are ready to sign." : "Review every changed signal.";
+
+  $("#review-change-list").innerHTML = signals.map(signal => `<article class="review-change-row">
+    <div><span>${escapeHtml(signal.key)}</span><strong>${escapeHtml(signal.label)}</strong><small>${signal.adjusted_by_safeguard ? "Automated safeguard adjusted this field" : "Safeguard disclosed but did not alter this field"}</small></div>
+    <div class="review-change-values"><span>${reviewValue(signal.clean_value, signal.unit)} trusted</span><b>→</b><strong>${reviewValue(signal.poisoned_value, signal.unit)} proposed</strong></div>
+    ${reviewActionButtons(signal)}
+  </article>`).join("") || "<p>No measured changes are available.</p>";
+
+  $("#review-data-body").innerHTML = signals.map(signal => {
+    const action = decisions[signal.key];
+    const approved = action === "accept" ? signal.poisoned_value : action === "reject" ? signal.clean_value : null;
+    return `<tr><td><strong>${escapeHtml(signal.label)}</strong><small>${escapeHtml(signal.key)}</small></td>
+      <td>${reviewValue(signal.clean_value, signal.unit)}</td>
+      <td class="changed-value">${reviewValue(signal.poisoned_value, signal.unit)}</td>
+      <td class="safe-value">${reviewValue(signal.value_used_by_selected_scenario, signal.unit)}</td>
+      <td class="approved-value">${approved === null ? "Pending" : reviewValue(approved, signal.unit)}</td>
+      <td>${reviewActionButtons(signal, true)}</td></tr>`;
+  }).join("") || '<tr><td colspan="6">No changed inputs were recorded for this case.</td></tr>';
+
+  const reviewerReady = $("#reviewer-name").value.trim().length > 0;
+  const findingReady = $("#review-finding").value.trim().length >= 10;
+  const acknowledged = $("#review-risk-ack").checked;
+  $("#review-submit").disabled = !complete || !reviewerReady || !findingReady || !acknowledged || saving;
+  $("#review-submit").textContent = saving ? "Saving…" : "Submit signed decision";
+}
+
+function setDataReviewAction(key, action) {
+  if (!state.dataReview.signals.some(signal => signal.key === key)) return;
+  state.dataReview.decisions[key] = action;
+  renderDataReview();
+}
+
+function resetDataReview() {
+  state.dataReview.decisions = {};
+  state.dataReview.started = Date.now();
+  $("#review-finding").value = "";
+  $("#review-risk-ack").checked = false;
+  $("#review-verdict").textContent = "AWAITING REVIEW";
+  renderDataReview();
+}
+
+async function submitDataReview(event) {
+  event.preventDefault();
+  if ($("#review-submit").disabled) return;
+  state.dataReview.saving = true;
+  renderDataReview();
+  try {
+    const response = await api("/api/data-reviews", { method: "POST", body: JSON.stringify({
+      batch_id: "lade-low-quality-seeds-17-29-43",
+      package_id: state.dataReview.packageId,
+      reviewer: $("#reviewer-name").value.trim(),
+      finding: $("#review-finding").value.trim(),
+      acknowledge_critical_risk: $("#review-risk-ack").checked,
+      review_seconds: Math.round((Date.now() - state.dataReview.started) / 1000),
+      decisions: state.dataReview.signals.map(signal => ({ key: signal.key, action: state.dataReview.decisions[signal.key] })),
+    }) });
+    $("#review-verdict").textContent = response.review.verdict.replaceAll("_", " ").toUpperCase();
+    toast("Signed human-review decision saved to the audit trail.");
+    await loadDataReviewAudit();
+    $("#review-tab-audit").click();
+  } catch (error) { toast(error.message); }
+  finally { state.dataReview.saving = false; renderDataReview(); }
+}
+
+async function loadDataReviewAudit() {
+  const { records } = await api("/api/data-reviews?limit=20");
+  $("#review-audit-list").innerHTML = records.length ? records.map(record => `<article class="review-audit-record">
+    <div><span>${escapeHtml(new Date(record.timestamp_utc).toLocaleString())}</span><strong>${escapeHtml(record.verdict.replaceAll("_", " ").toUpperCase())}</strong></div>
+    <p>${escapeHtml(record.finding)}</p>
+    <small>${escapeHtml(record.reviewer)} · package ${escapeHtml(record.package_id)} · ${record.accepted_count} accepted · ${record.rejected_count} rejected · real LaDe held-out evidence</small>
+  </article>`).join("") : "<p>No review decisions recorded yet.</p>";
 }
 
 async function saveDecision(action, overrideMinutes = null, note = "") {

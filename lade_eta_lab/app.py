@@ -41,6 +41,7 @@ ROOT_DIR = PROJECT_DIR.parent
 STATIC_DIR = PROJECT_DIR / "static"
 DEMO_DIR = PROJECT_DIR / "demo"
 OVERRIDES_PATH = RESULTS_DIR / "overrides.csv"
+DATA_REVIEW_LOG_PATH = RESULTS_DIR / "data_review_log.jsonl"
 DOCS = {
     "setup": PROJECT_DIR / "README.md",
     "deployment": PROJECT_DIR / "CLOUDFLARE_DEPLOYMENT.md",
@@ -78,6 +79,7 @@ SUPPORT_ASSETS = {
     ),
 }
 _decision_lock = threading.Lock()
+_data_review_lock = threading.Lock()
 
 
 class DecisionRequest(BaseModel):
@@ -97,6 +99,21 @@ class DecisionRequest(BaseModel):
         if self.action != "override" and self.override_minutes is not None:
             raise ValueError("override_minutes is only valid for an override")
         return self
+
+
+class DataReviewItemRequest(BaseModel):
+    key: str = Field(min_length=1, max_length=80)
+    action: Literal["accept", "reject"]
+
+
+class DataReviewRequest(BaseModel):
+    batch_id: str = Field(min_length=1, max_length=120)
+    package_id: str = Field(min_length=1, max_length=100)
+    reviewer: str = Field(min_length=1, max_length=80)
+    finding: str = Field(min_length=10, max_length=500)
+    acknowledge_critical_risk: bool
+    review_seconds: float = Field(default=0, ge=0, le=3600)
+    decisions: list[DataReviewItemRequest] = Field(min_length=1, max_length=10)
 
 
 class PreviewRequest(BaseModel):
@@ -125,7 +142,7 @@ class UploadedPredictionRow(BaseModel):
 
 
 class UploadedPredictionRequest(BaseModel):
-    rows: list[UploadedPredictionRow] = Field(min_length=1, max_length=50)
+    rows: list[UploadedPredictionRow] = Field(min_length=1, max_length=1000)
 
 
 app = FastAPI(
@@ -845,6 +862,87 @@ def decisions(limit: int = Query(default=20, ge=1, le=200)) -> dict[str, object]
         return {"records": []}
     frame = pd.read_csv(OVERRIDES_PATH).tail(limit).iloc[::-1]
     return {"records": _json_records(frame)}
+
+
+@app.post("/api/data-reviews", status_code=201)
+def create_data_review(request: DataReviewRequest) -> dict[str, object]:
+    """Persist an item-level approval decision derived from measured live evidence."""
+    if request.batch_id != "lade-low-quality-seeds-17-29-43":
+        raise HTTPException(422, "Unknown registered review batch.")
+    if not request.acknowledge_critical_risk:
+        raise HTTPException(422, "Acknowledge the critical-risk alert before submitting.")
+
+    evidence = live_demo_predict(
+        LivePredictionRequest(package_id=request.package_id, scenario="safeguarded")
+    )
+    changed = {
+        str(signal["key"]): signal
+        for signal in evidence["input_signals"]
+        if signal["changed_by_poisoning"]
+    }
+    submitted = {item.key: item.action for item in request.decisions}
+    if len(submitted) != len(request.decisions):
+        raise HTTPException(422, "Each changed signal can be reviewed only once.")
+    if set(submitted) != set(changed):
+        raise HTTPException(422, "Review every measured changed signal before submitting.")
+
+    items: list[dict[str, object]] = []
+    for key, signal in changed.items():
+        action = submitted[key]
+        proposed = signal["poisoned_value"]
+        trusted = signal["clean_value"]
+        items.append(
+            {
+                "key": key,
+                "label": signal["label"],
+                "unit": signal["unit"],
+                "trusted_value": trusted,
+                "proposed_value": proposed,
+                "safeguard_value": signal["value_used_by_selected_scenario"],
+                "action": action,
+                "approved_value": proposed if action == "accept" else trusted,
+            }
+        )
+
+    accepted = sum(item["action"] == "accept" for item in items)
+    rejected = len(items) - accepted
+    verdict = "approved" if not rejected else "rejected" if not accepted else "partially_approved"
+    entry = {
+        "review_id": f"review-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')}",
+        "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        "batch_id": request.batch_id,
+        "package_id": request.package_id,
+        "reviewer": request.reviewer,
+        "finding": request.finding,
+        "acknowledge_critical_risk": True,
+        "review_seconds": request.review_seconds,
+        "verdict": verdict,
+        "accepted_count": accepted,
+        "rejected_count": rejected,
+        "total_changed_signals": len(items),
+        "items": items,
+        "evidence": {
+            "dataset": "LaDe delivery data · Jilin",
+            "condition": "low_quality",
+            "synthetic": False,
+            "held_out_case": True,
+            "actual_outcome_used": False,
+        },
+    }
+    with _data_review_lock:
+        DATA_REVIEW_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with DATA_REVIEW_LOG_PATH.open("a", encoding="utf-8") as stream:
+            stream.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    return {"saved": True, "review": entry}
+
+
+@app.get("/api/data-reviews")
+def data_reviews(limit: int = Query(default=20, ge=1, le=200)) -> dict[str, object]:
+    if not DATA_REVIEW_LOG_PATH.exists():
+        return {"records": []}
+    with DATA_REVIEW_LOG_PATH.open(encoding="utf-8") as stream:
+        records = [json.loads(line) for line in stream if line.strip()]
+    return {"records": list(reversed(records[-limit:]))}
 
 
 @app.post("/api/experiments/preview")

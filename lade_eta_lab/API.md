@@ -20,7 +20,9 @@ Timeline parameters are `condition` and `mitigated`. Case parameters also includ
 |---|---|
 | `GET /api/live-demo/cases` | List four disclosed, real held-out teaching cases without revealing their outcomes |
 | `POST /api/live-demo/predict` | Recalculate one selected scenario and return its prediction, interval, review state, changed signals, model metadata, and caveats |
-| `POST /api/live-demo/upload-predict` | Score 1–50 prepared CSV rows through the trusted, unreliable-feed, and safeguarded pipelines in one request |
+| `POST /api/live-demo/upload-predict` | Score 1–1,000 prepared CSV rows through the trusted, unreliable-feed, and safeguarded pipelines in one request |
+| `GET /api/data-reviews` | Read recent signed, item-level human data-review records |
+| `POST /api/data-reviews` | Validate every changed signal against server-derived evidence and persist the signed decision |
 | `GET /api/live-demo/outcome/{package_id}` | Reveal the held-out outcome and scenario errors after the prediction comparison |
 
 The prediction request body is:

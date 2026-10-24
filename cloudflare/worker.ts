@@ -10,6 +10,7 @@ type Decision = Record<string, unknown>;
 type Scenario = "clean" | "poisoned" | "safeguarded";
 
 const DECISION_PREFIX = "decision:";
+const DATA_REVIEW_PREFIX = "data-review:";
 const DECISION_HEADERS = [
   "timestamp_utc", "package_id", "condition", "mitigated",
   "model_eta_minutes", "actual_minutes_demo_only", "action",
@@ -115,8 +116,8 @@ function requiredUploadNumber(row: any, field: string, index: number): number {
 }
 
 function validateUploadRows(body: any): any[] {
-  if (!Array.isArray(body?.rows) || body.rows.length < 1 || body.rows.length > 50) {
-    throw new Error("Provide between 1 and 50 prepared CSV rows.");
+  if (!Array.isArray(body?.rows) || body.rows.length < 1 || body.rows.length > 1000) {
+    throw new Error("Provide between 1 and 1,000 prepared CSV rows.");
   }
   return body.rows.map((row: any, index: number) => {
     const values = Object.fromEntries(
@@ -271,6 +272,14 @@ async function parseJsonBody(request: Request): Promise<any> {
 export class DecisionStore extends DurableObject<Env> {
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
+    if (request.method === "GET" && url.pathname === "/api/data-reviews") {
+      const requested = Number.parseInt(url.searchParams.get("limit") ?? "20", 10);
+      const limit = Math.max(1, Math.min(Number.isFinite(requested) ? requested : 20, 200));
+      const stored = await this.ctx.storage.list<Decision>({
+        prefix: DATA_REVIEW_PREFIX, reverse: true, limit,
+      });
+      return jsonResponse({ records: [...stored.values()] });
+    }
     if (request.method === "GET" && url.pathname === "/api/decisions") {
       const requested = Number.parseInt(url.searchParams.get("limit") ?? "20", 10);
       const limit = Math.max(1, Math.min(Number.isFinite(requested) ? requested : 20, 200));
@@ -295,6 +304,88 @@ export class DecisionStore extends DurableObject<Env> {
           "content-disposition": 'attachment; filename="overrides.csv"',
         },
       });
+    }
+    if (request.method === "POST" && url.pathname === "/api/data-reviews") {
+      let body: any;
+      try {
+        body = await parseJsonBody(request);
+      } catch (error) {
+        return errorResponse(400, error instanceof Error ? error.message : "Invalid JSON body.");
+      }
+      if (String(body.batch_id ?? "") !== "lade-low-quality-seeds-17-29-43") {
+        return errorResponse(422, "Unknown registered review batch.");
+      }
+      if (body.acknowledge_critical_risk !== true) {
+        return errorResponse(422, "Acknowledge the critical-risk alert before submitting.");
+      }
+      const packageId = String(body.package_id ?? "");
+      const record = (EDGE_DATA.live.records as Record<string, any>)[packageId];
+      if (!record) return errorResponse(404, "Choose one of the published live-demo deliveries.");
+      const reviewer = String(body.reviewer ?? "").trim();
+      const finding = String(body.finding ?? "").trim();
+      if (!reviewer || reviewer.length > 80) return errorResponse(422, "Reviewer is required.");
+      if (finding.length < 10 || finding.length > 500) {
+        return errorResponse(422, "Finding must be between 10 and 500 characters.");
+      }
+      const reviewSeconds = Number(body.review_seconds ?? 0);
+      if (!Number.isFinite(reviewSeconds) || reviewSeconds < 0 || reviewSeconds > 3600) {
+        return errorResponse(422, "review_seconds must be between 0 and 3600.");
+      }
+      const signals = (record.templates.safeguarded.input_signals as any[])
+        .filter((signal) => signal.changed_by_poisoning);
+      if (!Array.isArray(body.decisions)) {
+        return errorResponse(422, "Review every measured changed signal before submitting.");
+      }
+      const submitted = new Map<string, string>();
+      for (const item of body.decisions) {
+        const key = String(item?.key ?? "");
+        const action = String(item?.action ?? "");
+        if (submitted.has(key) || !["accept", "reject"].includes(action)) {
+          return errorResponse(422, "Each changed signal needs one accept or reject decision.");
+        }
+        submitted.set(key, action);
+      }
+      const changedKeys = new Set(signals.map((signal) => String(signal.key)));
+      if (submitted.size !== changedKeys.size || [...submitted.keys()].some((key) => !changedKeys.has(key))) {
+        return errorResponse(422, "Review every measured changed signal before submitting.");
+      }
+      const items = signals.map((signal) => {
+        const action = submitted.get(String(signal.key)) as "accept" | "reject";
+        return {
+          key: signal.key,
+          label: signal.label,
+          unit: signal.unit,
+          trusted_value: signal.clean_value,
+          proposed_value: signal.poisoned_value,
+          safeguard_value: signal.value_used_by_selected_scenario,
+          action,
+          approved_value: action === "accept" ? signal.poisoned_value : signal.clean_value,
+        };
+      });
+      const accepted = items.filter((item) => item.action === "accept").length;
+      const rejected = items.length - accepted;
+      const timestamp = new Date().toISOString();
+      const entry: Decision = {
+        review_id: `review-${crypto.randomUUID()}`,
+        timestamp_utc: timestamp,
+        batch_id: body.batch_id,
+        package_id: packageId,
+        reviewer,
+        finding,
+        acknowledge_critical_risk: true,
+        review_seconds: reviewSeconds,
+        verdict: rejected === 0 ? "approved" : accepted === 0 ? "rejected" : "partially_approved",
+        accepted_count: accepted,
+        rejected_count: rejected,
+        total_changed_signals: items.length,
+        items,
+        evidence: {
+          dataset: "LaDe delivery data · Jilin", condition: "low_quality", synthetic: false,
+          held_out_case: true, actual_outcome_used: false,
+        },
+      };
+      await this.ctx.storage.put(`${DATA_REVIEW_PREFIX}${timestamp}:${crypto.randomUUID()}`, entry);
+      return jsonResponse({ saved: true, review: entry }, 201);
     }
     if (request.method !== "POST" || url.pathname !== "/api/decisions") {
       return errorResponse(404, "API route not found.");
@@ -457,7 +548,8 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
     return record ? jsonResponse(record.outcome)
       : errorResponse(404, "Choose one of the published live-demo deliveries.");
   }
-  if (path === "/api/decisions" || path === "/api/downloads/overrides.csv") {
+  if (path === "/api/decisions" || path === "/api/data-reviews"
+    || path === "/api/downloads/overrides.csv") {
     return env.DECISIONS.getByName("antydata-decisions").fetch(request);
   }
   if (path === "/api/docs" && request.method === "GET") {
