@@ -40,6 +40,8 @@ const DOWNLOADS: Record<string, string> = {
   "roadmap-data.js": "application/javascript; charset=utf-8",
   "user-report.html": "text/html; charset=utf-8",
   "render_videos.py": "text/x-python; charset=utf-8",
+  "review_layer.zip": "application/zip",
+  "render_videos_split.py": "text/x-python; charset=utf-8",
 };
 
 function apiHeaders(contentType = "application/json; charset=utf-8"): HeadersInit {

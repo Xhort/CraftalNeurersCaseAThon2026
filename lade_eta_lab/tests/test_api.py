@@ -15,6 +15,19 @@ def test_health_and_overview_use_measured_results():
     assert './lade_eta_lab/static/antydata-logo.png' in website.text
     assert "ETA Reliability Lab" not in website.text
     assert client.get("/lade_eta_lab/static/antydata-logo.png").status_code == 200
+    assert website.text.count('class="review-preview-card"') == 3
+    assert "/api/downloads/review_layer.zip" in website.text
+    assert client.get("/support/review_preview_alerts.png").status_code == 200
+    assert client.get("/support/review_preview_data.png").status_code == 200
+    assert client.get("/support/review_preview_decision.png").status_code == 200
+    video_preview = client.get("/support/PREVIEW_split_with_music_sample_data.mp4")
+    assert video_preview.status_code == 200
+    assert video_preview.headers["content-type"] == "video/mp4"
+    assert client.get("/support/not-a-file.png").status_code == 404
+    review_bundle = client.get("/api/downloads/review_layer.zip")
+    assert review_bundle.status_code == 200
+    assert review_bundle.headers["content-type"] == "application/zip"
+    assert client.get("/api/downloads/render_videos_split.py").status_code == 200
     assert "More data made delivery ETAs" in website.text
     assert "Do not deploy yet" in website.text
     assert 'id="roadmap-frame"' in website.text

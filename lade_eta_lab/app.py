@@ -68,6 +68,17 @@ DOWNLOADS = {
     "roadmap-data.js": ROOT_DIR / "roadmap-data.js",
     "user-report.html": ROOT_DIR / "user-report.html",
     "render_videos.py": ROOT_DIR / "render_videos.py",
+    "review_layer.zip": ROOT_DIR / "review_layer.zip",
+    "render_videos_split.py": ROOT_DIR / "render_videos (1).py",
+}
+SUPPORT_ASSETS = {
+    "review_preview_alerts.png": (ROOT_DIR / "review_preview_alerts.png", "image/png"),
+    "review_preview_data.png": (ROOT_DIR / "review_preview_data.png", "image/png"),
+    "review_preview_decision.png": (ROOT_DIR / "review_preview_decision.png", "image/png"),
+    "PREVIEW_split_with_music_sample_data.mp4": (
+        ROOT_DIR / "PREVIEW_split_with_music_sample_data.mp4",
+        "video/mp4",
+    ),
 }
 _decision_lock = threading.Lock()
 
@@ -412,6 +423,15 @@ def roadmap_data() -> FileResponse:
 @app.get("/user-report.html", include_in_schema=False)
 def user_report() -> FileResponse:
     return FileResponse(ROOT_DIR / "user-report.html")
+
+
+@app.get("/support/{filename}", include_in_schema=False)
+def support_asset(filename: str) -> FileResponse:
+    asset = SUPPORT_ASSETS.get(filename)
+    if asset is None or not asset[0].exists():
+        raise HTTPException(404, "Support asset not found")
+    path, media_type = asset
+    return FileResponse(path, media_type=media_type)
 
 
 @app.get("/api/health")

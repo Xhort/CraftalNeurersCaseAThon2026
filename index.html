@@ -307,6 +307,17 @@
           </div>
         </div>
         <div class="oversight-foot reveal"><div><span>WHO REVIEWS</span><strong>Qualified dispatcher</strong></div><div><span>WHEN TO DEFER</span><strong>Evidence crosses approved risk threshold</strong></div><div><span>WHAT GETS LOGGED</span><strong>Evidence, action, correction, review time</strong></div></div>
+        <div class="review-layer reveal" aria-labelledby="review-layer-title">
+          <div class="review-layer-heading">
+            <div><span class="section-kicker light">DATA APPROVAL LAYER</span><h3 id="review-layer-title">Review every correction before the model uses it.</h3></div>
+            <div class="review-layer-copy"><p>The packaged review console shows the safeguard's alerts, row-level changes, and final human decision. These are static implementation views—not a slideshow and not a claim that the separate FastAPI service is connected to this public demo.</p><a class="review-source-link" href="/api/downloads/review_layer.zip" data-api-path="/api/downloads/review_layer.zip" download>Download review-layer source <span>ZIP ↓</span></a></div>
+          </div>
+          <div class="review-preview-grid">
+            <a class="review-preview-card" href="./support/review_preview_alerts.png" target="_blank" rel="noopener"><img src="./support/review_preview_alerts.png" alt="Review console showing batch alerts and flagged corrections" loading="lazy"><span><b>01</b><strong>Inspect alerts</strong><small>See which safeguards fired and why.</small></span></a>
+            <a class="review-preview-card" href="./support/review_preview_data.png" target="_blank" rel="noopener"><img src="./support/review_preview_data.png" alt="Review console comparing original and corrected dataset values" loading="lazy"><span><b>02</b><strong>Compare the data</strong><small>Trace original, corrected, and approved values.</small></span></a>
+            <a class="review-preview-card" href="./support/review_preview_decision.png" target="_blank" rel="noopener"><img src="./support/review_preview_decision.png" alt="Review console showing a documented human approval decision" loading="lazy"><span><b>03</b><strong>Record the decision</strong><small>Accept, reject, and preserve the audit trail.</small></span></a>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -318,6 +329,7 @@
         </div>
         <div class="walkthrough-rule reveal"><span>LIVE DEMO RULE</span><strong>The team demonstrates the working platform directly. No slide deck or slideshow is used.</strong></div>
         <iframe class="roadmap-frame reveal" id="roadmap-frame" src="./roadmap-section.html" title="Interactive impact roadmap and scenario videos" loading="lazy"></iframe>
+        <div class="recorded-preview reveal"><div><span>OPTIONAL RECORDED FALLBACK</span><strong>Split-screen sample-data preview with music</strong><small>Supporting evidence only—the competition presentation remains a live platform walkthrough.</small></div><a href="./support/PREVIEW_split_with_music_sample_data.mp4" target="_blank" rel="noopener">Open MP4 ↗</a></div>
         <details class="evidence-drawer reveal" id="evidence-files">
           <summary><span><small>FOR JUDGES AND REPRODUCTION</small><strong>Evidence and source files</strong></span><em>Open files</em></summary>
           <div class="evidence-file-links">
@@ -330,6 +342,8 @@
             <a href="/api/downloads/roadmap-data.js" data-api-path="/api/downloads/roadmap-data.js" download><span>JS</span><strong>Roadmap data</strong></a>
             <a href="./user-report.html" target="_blank" rel="noopener"><span>HTML</span><strong>User report</strong></a>
             <a href="/api/downloads/render_videos.py" data-api-path="/api/downloads/render_videos.py" download><span>PY</span><strong>Video renderer</strong></a>
+            <a href="/api/downloads/review_layer.zip" data-api-path="/api/downloads/review_layer.zip" download><span>ZIP</span><strong>Human-review source</strong></a>
+            <a href="/api/downloads/render_videos_split.py" data-api-path="/api/downloads/render_videos_split.py" download><span>PY</span><strong>Split-video renderer</strong></a>
           </div>
         </details>
       </div>
