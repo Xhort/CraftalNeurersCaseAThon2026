@@ -72,9 +72,6 @@ DOWNLOADS = {
     "render_videos_split.py": ROOT_DIR / "render_videos (1).py",
 }
 SUPPORT_ASSETS = {
-    "review_preview_alerts.png": (ROOT_DIR / "review_preview_alerts.png", "image/png"),
-    "review_preview_data.png": (ROOT_DIR / "review_preview_data.png", "image/png"),
-    "review_preview_decision.png": (ROOT_DIR / "review_preview_decision.png", "image/png"),
     "PREVIEW_split_with_music_sample_data.mp4": (
         ROOT_DIR / "PREVIEW_split_with_music_sample_data.mp4",
         "video/mp4",

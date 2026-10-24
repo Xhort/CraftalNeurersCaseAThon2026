@@ -61,6 +61,12 @@ async function api(path, options = {}) {
   }
 }
 
+async function apiText(path) {
+  const response = await fetch(`${API_BASE}${path}`);
+  if (!response.ok) throw new Error(`Evidence request failed (${response.status})`);
+  return response.text();
+}
+
 function resolveBackend() {
   const localHost = ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
   if (window.location.protocol === "file:" || (localHost && window.location.port !== "8000")) {
@@ -817,6 +823,79 @@ function setupOversight() {
   $("#override-modal").addEventListener("click", event => { if (event.target.id === "override-modal") closeModal(event.currentTarget); });
 }
 
+function setupDataReview() {
+  const tabs = $$(".data-review-tab");
+  const select = selected => {
+    tabs.forEach(tab => {
+      const active = tab === selected;
+      tab.classList.toggle("active", active);
+      tab.setAttribute("aria-selected", String(active));
+      tab.tabIndex = active ? 0 : -1;
+      const panel = $(`#review-panel-${tab.dataset.reviewPanel}`);
+      panel.hidden = !active;
+      panel.classList.toggle("active", active);
+    });
+  };
+  tabs.forEach((tab, index) => {
+    tab.addEventListener("click", () => select(tab));
+    tab.addEventListener("keydown", event => {
+      let next = null;
+      if (event.key === "ArrowRight") next = (index + 1) % tabs.length;
+      if (event.key === "ArrowLeft") next = (index - 1 + tabs.length) % tabs.length;
+      if (event.key === "Home") next = 0;
+      if (event.key === "End") next = tabs.length - 1;
+      if (next === null) return;
+      event.preventDefault();
+      select(tabs[next]);
+      tabs[next].focus();
+    });
+  });
+}
+
+function reviewValue(value, unit) {
+  if (unit === "%") return `${fmt(value, 0)}%`;
+  if (unit === "km") return `${fmt(value, 1)} km`;
+  if (unit === "minutes") return `${fmt(value, 1)} min`;
+  if (unit === "days") return `${fmt(value, 0)} days`;
+  return fmt(value, 1);
+}
+
+async function loadDataReview() {
+  const csv = parseCsv(await apiText("/api/downloads/modification_log.csv"));
+  const headers = csv[0];
+  const records = csv.slice(1).map(values => Object.fromEntries(headers.map((header, index) => [header, values[index] || ""])));
+  const lowQuality = records.find(record => record.condition === "low_quality");
+  if (!lowQuality) throw new Error("The registered low-quality condition is missing.");
+
+  $("#review-batch-label").textContent = `registered seeds ${lowQuality.seeds.replaceAll("|", ", ")}`;
+  $("#review-feed-share").textContent = lowQuality.source_mix.match(/\d+%/)?.[0] || "55%";
+  $("#review-source-trust").textContent = `${fmt(Number(lowQuality.severity.match(/[\d.]+/)?.[0] || .25) * 100, 0)}%`;
+  $("#review-alert-volume").textContent = `The registered low-quality feed reaches ${lowQuality.source_mix.toLowerCase()} and represents: ${lowQuality.plausible_failure.toLowerCase()}.`;
+  $("#review-alert-fields").textContent = `Registered fields: ${lowQuality.changed_fields.replaceAll("|", ", ").replaceAll("_", " ")}.`;
+
+  const item = state.liveCases[0];
+  if (!item) throw new Error("No held-out review case is available.");
+  const result = await api("/api/live-demo/predict", {
+    method: "POST",
+    body: JSON.stringify({ package_id: item.package_id, scenario: "safeguarded" }),
+  });
+  const signals = result.input_signals.filter(signal => signal.changed_by_poisoning);
+  $("#review-case-label").textContent = `${item.label} · package ${item.package_id}`;
+  $("#review-data-body").innerHTML = signals.map(signal => `<tr>
+    <td><strong>${escapeHtml(signal.label)}</strong><small>${escapeHtml(signal.key)}</small></td>
+    <td>${reviewValue(signal.clean_value, signal.unit)}</td>
+    <td class="changed-value">${reviewValue(signal.poisoned_value, signal.unit)}</td>
+    <td class="safe-value">${reviewValue(signal.value_used_by_selected_scenario, signal.unit)}</td>
+    <td><span class="review-data-status">${signal.adjusted_by_safeguard ? "ADJUSTED" : "DISCLOSED"}</span></td>
+  </tr>`).join("") || '<tr><td colspan="5">No changed inputs were recorded for this case.</td></tr>';
+
+  const summary = (condition, mitigated) => state.comparison.find(row => row.condition === condition && row.mitigated === mitigated);
+  $("#review-mae-trusted").textContent = `${fmt(summary("reference", false).mae_minutes_mean)} min`;
+  $("#review-mae-poisoned").textContent = `${fmt(summary("low_quality", false).mae_minutes_mean)} min`;
+  $("#review-mae-safe").textContent = `${fmt(summary("low_quality", true).mae_minutes_mean)} min`;
+  $("#review-mae-combined").textContent = `${fmt(summary("combined", true).mae_minutes_mean)} min`;
+}
+
 async function saveDecision(action, overrideMinutes = null, note = "") {
   const item = state.cases[state.caseIndex];
   if (!item) return;
@@ -863,10 +942,11 @@ function setupRoadmapFrame() {
 }
 
 async function init() {
-  setupNavigation(); setupHeroProof(); setupReveals(); setupLiveDemo(); setupUploadDemo(); setupLabControls(); setupOversight(); setupRoadmapFrame();
+  setupNavigation(); setupHeroProof(); setupReveals(); setupLiveDemo(); setupUploadDemo(); setupLabControls(); setupOversight(); setupDataReview(); setupRoadmapFrame();
   await resolveBackend();
   try {
     await Promise.all([loadHealth(), loadOverview(), loadComparison(), loadLiveDemoCases()]);
+    await loadDataReview();
   } catch (error) {
     console.error(error);
     toast(error.message);

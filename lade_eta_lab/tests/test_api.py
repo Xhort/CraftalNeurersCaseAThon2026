@@ -15,11 +15,10 @@ def test_health_and_overview_use_measured_results():
     assert './lade_eta_lab/static/antydata-logo.png' in website.text
     assert "ETA Reliability Lab" not in website.text
     assert client.get("/lade_eta_lab/static/antydata-logo.png").status_code == 200
-    assert website.text.count('class="review-preview-card"') == 3
+    assert 'id="data-review-console"' in website.text
+    assert website.text.count('class="data-review-tab') == 3
+    assert "review_preview_alerts.png" not in website.text
     assert "/api/downloads/review_layer.zip" in website.text
-    assert client.get("/support/review_preview_alerts.png").status_code == 200
-    assert client.get("/support/review_preview_data.png").status_code == 200
-    assert client.get("/support/review_preview_decision.png").status_code == 200
     video_preview = client.get("/support/PREVIEW_split_with_music_sample_data.mp4")
     assert video_preview.status_code == 200
     assert video_preview.headers["content-type"] == "video/mp4"

@@ -51,9 +51,6 @@ for (const [source, destination] of [
   await cp(resolve(root, source), resolve(dist, "download-assets", destination));
 }
 for (const filename of [
-  "review_preview_alerts.png",
-  "review_preview_data.png",
-  "review_preview_decision.png",
   "PREVIEW_split_with_music_sample_data.mp4",
 ]) {
   await cp(resolve(root, filename), resolve(dist, "support", filename));

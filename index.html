@@ -309,13 +309,37 @@
         <div class="oversight-foot reveal"><div><span>WHO REVIEWS</span><strong>Qualified dispatcher</strong></div><div><span>WHEN TO DEFER</span><strong>Evidence crosses approved risk threshold</strong></div><div><span>WHAT GETS LOGGED</span><strong>Evidence, action, correction, review time</strong></div></div>
         <div class="review-layer reveal" aria-labelledby="review-layer-title">
           <div class="review-layer-heading">
-            <div><span class="section-kicker light">DATA APPROVAL LAYER</span><h3 id="review-layer-title">Review every correction before the model uses it.</h3></div>
-            <div class="review-layer-copy"><p>The packaged review console shows the safeguard's alerts, row-level changes, and final human decision. These are static implementation views—not a slideshow and not a claim that the separate FastAPI service is connected to this public demo.</p><a class="review-source-link" href="/api/downloads/review_layer.zip" data-api-path="/api/downloads/review_layer.zip" download>Download review-layer source <span>ZIP ↓</span></a></div>
+            <div><span class="section-kicker light">LIVE DATA APPROVAL LAYER</span><h3 id="review-layer-title">Inspect what changed before trusting the answer.</h3></div>
+            <div class="review-layer-copy"><p>This console reads the measured experiment evidence—not example screenshots. Review the registered failure, compare a real held-out delivery before and after degradation, and see why the current safeguard remains a no-go.</p><a class="review-source-link" href="/api/downloads/modification_log.csv" data-api-path="/api/downloads/modification_log.csv" download>Download modification log <span>CSV ↓</span></a></div>
           </div>
-          <div class="review-preview-grid">
-            <a class="review-preview-card" href="./support/review_preview_alerts.png" target="_blank" rel="noopener"><img src="./support/review_preview_alerts.png" alt="Review console showing batch alerts and flagged corrections" loading="lazy"><span><b>01</b><strong>Inspect alerts</strong><small>See which safeguards fired and why.</small></span></a>
-            <a class="review-preview-card" href="./support/review_preview_data.png" target="_blank" rel="noopener"><img src="./support/review_preview_data.png" alt="Review console comparing original and corrected dataset values" loading="lazy"><span><b>02</b><strong>Compare the data</strong><small>Trace original, corrected, and approved values.</small></span></a>
-            <a class="review-preview-card" href="./support/review_preview_decision.png" target="_blank" rel="noopener"><img src="./support/review_preview_decision.png" alt="Review console showing a documented human approval decision" loading="lazy"><span><b>03</b><strong>Record the decision</strong><small>Accept, reject, and preserve the audit trail.</small></span></a>
+          <div class="data-review-console" id="data-review-console">
+            <div class="data-review-topbar"><div><span class="review-live-dot"></span><strong>Measured LaDe experiment</strong><small id="review-batch-label">Loading evidence…</small></div><span class="review-verdict">NOT APPROVED FOR DEPLOYMENT</span></div>
+            <div class="data-review-stats" aria-label="Review batch summary">
+              <div><span>SOURCE RECORDS</span><strong id="review-source-rows">31,415</strong><small>LaDe · Jilin</small></div>
+              <div><span>FIXED EVALUATION SET</span><strong id="review-eval-rows">3,407</strong><small>same future deliveries</small></div>
+              <div><span>UNRELIABLE FEED</span><strong id="review-feed-share">55%</strong><small>maximum evidence share</small></div>
+              <div><span>RECORDED TRUST</span><strong id="review-source-trust">25%</strong><small>unreliable-source score</small></div>
+            </div>
+            <div class="data-review-tabs" role="tablist" aria-label="Data approval evidence">
+              <button class="data-review-tab active" role="tab" aria-selected="true" aria-controls="review-panel-alerts" id="review-tab-alerts" data-review-panel="alerts">1 · Alerts</button>
+              <button class="data-review-tab" role="tab" aria-selected="false" aria-controls="review-panel-data" id="review-tab-data" data-review-panel="data" tabindex="-1">2 · Changed data</button>
+              <button class="data-review-tab" role="tab" aria-selected="false" aria-controls="review-panel-decision" id="review-tab-decision" data-review-panel="decision" tabindex="-1">3 · Decision</button>
+            </div>
+            <div class="data-review-panel active" id="review-panel-alerts" role="tabpanel" aria-labelledby="review-tab-alerts">
+              <div class="review-alert critical"><span>CRITICAL</span><div><strong>Unreliable volume outweighs trusted evidence</strong><p id="review-alert-volume">The registered low-quality feed reaches 55% of training evidence.</p></div></div>
+              <div class="review-alert"><span>TRACE</span><div><strong>Training and live inputs both changed</strong><p id="review-alert-fields">Loading the registered changed fields…</p></div></div>
+              <div class="review-alert"><span>CONTROL</span><div><strong>The comparison stays matched</strong><p>Package IDs and actual delivery outcomes remain fixed across trusted, degraded, and safeguarded conditions.</p></div></div>
+            </div>
+            <div class="data-review-panel" id="review-panel-data" role="tabpanel" aria-labelledby="review-tab-data" hidden>
+              <div class="review-panel-heading"><div><span>REAL HELD-OUT DELIVERY</span><strong id="review-case-label">Loading comparison…</strong></div><p>Only fields changed by the registered low-quality intervention are shown. The actual delivery duration remains hidden from the model.</p></div>
+              <div class="review-table-wrap"><table class="review-data-table"><thead><tr><th>Input used by the AI</th><th>Trusted value</th><th>After unreliable feed</th><th>Safeguard used</th><th>Review</th></tr></thead><tbody id="review-data-body"><tr><td colspan="5">Loading measured values…</td></tr></tbody></table></div>
+            </div>
+            <div class="data-review-panel" id="review-panel-decision" role="tabpanel" aria-labelledby="review-tab-decision" hidden>
+              <div class="review-decision-grid">
+                <div class="review-decision-copy"><span class="review-decision-status">NO-GO</span><h4>Do not deploy this safeguard yet.</h4><p>The low-quality test improves slightly with the safeguard, but the full readiness check fails: combined-condition error gets worse and the policy defers every stale and combined case.</p><a href="/api/downloads/summary.csv" data-api-path="/api/downloads/summary.csv" download>Download measured results →</a></div>
+                <div class="review-decision-metrics"><div><span>TRUSTED ERROR</span><strong id="review-mae-trusted">—</strong><small>mean absolute error</small></div><div><span>AFTER BAD DATA</span><strong id="review-mae-poisoned">—</strong><small>mean absolute error</small></div><div><span>WITH SAFEGUARD</span><strong id="review-mae-safe">—</strong><small>mean absolute error</small></div><div><span>COMBINED TEST</span><strong id="review-mae-combined">—</strong><small>safeguard on</small></div></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
